@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig, writeCredentials, DEFAULT_ENDPOINT } from "./config.js";
+import { CliError } from "./errors.js";
 
 let dir: string;
 
@@ -41,9 +42,16 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ stateDir: dir, env: {}, flags: {} })).toThrow(/no token/i);
   });
 
-  it("rejects malformed credentials.json", () => {
+  it("rejects malformed credentials.json with CliError(usage)", () => {
     writeFileSync(join(dir, "credentials.json"), "{ broken");
-    expect(() => loadConfig({ stateDir: dir, env: {}, flags: {} })).toThrow();
+    try {
+      loadConfig({ stateDir: dir, env: {}, flags: {} });
+      throw new Error("should not reach");
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError);
+      expect((err as CliError).kind).toBe("usage");
+      expect((err as Error).message).toMatch(/credentials\.json/i);
+    }
   });
 });
 

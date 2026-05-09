@@ -32,7 +32,11 @@ export function readCredentials(dir: string = defaultStateDir()): Credentials | 
   const p = credPath(dir);
   if (!existsSync(p)) return null;
   const raw = readFileSync(p, "utf8");
-  return CredentialsSchema.parse(JSON.parse(raw));
+  try {
+    return CredentialsSchema.parse(JSON.parse(raw));
+  } catch (err) {
+    throw new CliError("usage", `credentials.json malformed (${(err as Error).message}). Run \`loomy init\` to repair.`);
+  }
 }
 
 export function writeCredentials(dir: string = defaultStateDir(), creds: Credentials): void {

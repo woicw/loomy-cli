@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readState, writeState, ensureSessionId } from "./state.js";
+import { CliError } from "./errors.js";
 
 let dir: string;
 
@@ -43,8 +44,15 @@ describe("state", () => {
     expect(readState(dir).lastSessionId).toBe(b);
   });
 
-  it("rejects malformed JSON cleanly", () => {
+  it("rejects malformed JSON with CliError(usage)", () => {
     require("node:fs").writeFileSync(join(dir, "state.json"), "{ broken");
-    expect(() => readState(dir)).toThrow();
+    try {
+      readState(dir);
+      throw new Error("should not reach");
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError);
+      expect((err as CliError).kind).toBe("usage");
+      expect((err as Error).message).toMatch(/state\.json/i);
+    }
   });
 });

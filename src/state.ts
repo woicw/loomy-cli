@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { CliError } from "./errors.js";
 
 const StateSchema = z.object({
   lastSessionId: z.string().optional(),
@@ -21,7 +22,11 @@ export function readState(dir: string = defaultStateDir()): State {
   const p = statePath(dir);
   if (!existsSync(p)) return {};
   const raw = readFileSync(p, "utf8");
-  return StateSchema.parse(JSON.parse(raw));
+  try {
+    return StateSchema.parse(JSON.parse(raw));
+  } catch (err) {
+    throw new CliError("usage", `state.json malformed (${(err as Error).message}). Delete it and run again.`);
+  }
 }
 
 export function writeState(dir: string = defaultStateDir(), state: State): void {
