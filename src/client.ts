@@ -4,6 +4,9 @@ export interface ClientOpts {
   endpoint: string;
   apiToken: string;
   fetchImpl?: typeof fetch;
+  debug?: boolean;
+  /** Where debug lines go. Defaults to process.stderr. */
+  stderr?: (s: string) => void;
 }
 
 interface ProblemJson {
@@ -62,8 +65,23 @@ export class GatewayClient {
   }
 
   private async safeFetch(url: string, init: RequestInit): Promise<Response> {
+    const writeStderr = this.opts.stderr ?? ((s: string) => { process.stderr.write(s); });
+    if (this.opts.debug) {
+      const method = init.method ?? "GET";
+      writeStderr(`→ ${method} ${url}\n`);
+      const headers = init.headers as Record<string, string> | undefined;
+      if (headers) for (const [k, v] of Object.entries(headers)) writeStderr(`    ${k}: ${v}\n`);
+    }
     try {
-      return await this.fetchImpl(url, init);
+      const res = await this.fetchImpl(url, init);
+      if (this.opts.debug) {
+        writeStderr(`← ${res.status} ${res.statusText}\n`);
+        const ct = res.headers.get("content-type");
+        const cl = res.headers.get("content-length");
+        if (ct) writeStderr(`    content-type: ${ct}\n`);
+        if (cl) writeStderr(`    content-length: ${cl}\n`);
+      }
+      return res;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       throw new CliError("network", `Cannot reach gateway at ${this.opts.endpoint}: ${msg}`);

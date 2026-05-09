@@ -30,7 +30,11 @@ function makeClient(globals: GlobalFlags): GatewayClient {
   const cfg = loadConfig({
     flags: { token: globals.token, endpoint: globals.endpoint },
   });
-  return new GatewayClient({ endpoint: cfg.endpoint, apiToken: cfg.apiToken });
+  return new GatewayClient({
+    endpoint: cfg.endpoint,
+    apiToken: cfg.apiToken,
+    debug: globals.debug,
+  });
 }
 
 function renderModeFrom(globals: GlobalFlags): RenderMode {

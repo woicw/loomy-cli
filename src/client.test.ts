@@ -83,4 +83,28 @@ describe("GatewayClient", () => {
     const c = new GatewayClient({ endpoint: "http://gw", apiToken: "T" });
     await expect(c.getJson("/x")).rejects.toMatchObject({ kind: "network" });
   });
+
+  it("writes debug lines to stderr when debug enabled", async () => {
+    mockFetch(() => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } }));
+    const lines: string[] = [];
+    const c = new GatewayClient({
+      endpoint: "http://gw",
+      apiToken: "T",
+      debug: true,
+      stderr: (s) => lines.push(s),
+    });
+    await c.getJson("/x");
+    const text = lines.join("");
+    expect(text).toContain("→ GET http://gw/x");
+    expect(text).toContain("Bearer T");
+    expect(text).toContain("← 200");
+  });
+
+  it("does not write debug lines when debug disabled", async () => {
+    mockFetch(() => new Response("{}", { status: 200, headers: { "content-type": "application/json" } }));
+    const lines: string[] = [];
+    const c = new GatewayClient({ endpoint: "http://gw", apiToken: "T", stderr: (s) => lines.push(s) });
+    await c.getJson("/x");
+    expect(lines).toEqual([]);
+  });
 });
