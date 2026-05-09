@@ -4,8 +4,6 @@ import { z } from "zod";
 import { CliError } from "./errors.js";
 import { defaultStateDir } from "./state.js";
 
-export const DEFAULT_ENDPOINT = "http://172.31.250.82:16888";
-
 const CredentialsSchema = z.object({
   endpoint: z.string().url().optional(),
   apiToken: z.string().min(1),
@@ -52,10 +50,13 @@ export function loadConfig(input: LoadConfigInput = {}): Config {
 
   const file = readCredentials(stateDir);
   const apiToken = flags.token ?? env.LOOMY_API_TOKEN ?? file?.apiToken;
-  const endpoint = flags.endpoint ?? env.LOOMY_ENDPOINT ?? file?.endpoint ?? DEFAULT_ENDPOINT;
+  const endpoint = flags.endpoint ?? env.LOOMY_ENDPOINT ?? file?.endpoint;
 
   if (!apiToken) {
     throw new CliError("auth", "No token. Run `loomy init` to set one, or pass --token / LOOMY_API_TOKEN.");
+  }
+  if (!endpoint) {
+    throw new CliError("usage", "No endpoint. Run `loomy init` to configure, or pass --endpoint / LOOMY_ENDPOINT.");
   }
 
   return { endpoint, apiToken };

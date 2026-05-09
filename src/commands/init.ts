@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { input, password, confirm } from "@inquirer/prompts";
-import { writeCredentials, DEFAULT_ENDPOINT, readCredentials } from "../config.js";
+import { writeCredentials, readCredentials } from "../config.js";
 import { CliError } from "../errors.js";
 
 export interface RunInitOpts {
@@ -28,7 +28,7 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
   const existing = (() => { try { return readCredentials(opts.stateDir); } catch { return null; } })();
   const legacy = legacyToken(opts.stateDir);
 
-  const wantEndpoint = opts.flags.endpoint ?? existing?.endpoint ?? DEFAULT_ENDPOINT;
+  const wantEndpoint = opts.flags.endpoint ?? existing?.endpoint ?? "";
   const tokenDefault = opts.flags.apiToken ?? existing?.apiToken ?? legacy ?? "";
 
   let endpoint: string;

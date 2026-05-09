@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadConfig, writeCredentials, DEFAULT_ENDPOINT } from "./config.js";
+import { loadConfig, writeCredentials } from "./config.js";
 import { CliError } from "./errors.js";
 
 let dir: string;
@@ -16,11 +16,15 @@ afterEach(() => {
 });
 
 describe("loadConfig", () => {
-  it("uses default endpoint when no source provides one", () => {
-    expect(() => loadConfig({ stateDir: dir, env: {}, flags: { token: "tok" } })).not.toThrow();
-    const cfg = loadConfig({ stateDir: dir, env: {}, flags: { token: "tok" } });
-    expect(cfg.endpoint).toBe(DEFAULT_ENDPOINT);
-    expect(cfg.apiToken).toBe("tok");
+  it("throws CliError(usage) when no endpoint anywhere (no default after v1.1)", () => {
+    try {
+      loadConfig({ stateDir: dir, env: {}, flags: { token: "tok" } });
+      throw new Error("should not reach");
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError);
+      expect((err as CliError).kind).toBe("usage");
+      expect((err as Error).message).toMatch(/endpoint/i);
+    }
   });
 
   it("flag wins over env wins over file", () => {
