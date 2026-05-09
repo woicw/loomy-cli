@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { runChat } from "./chat.js";
+import { runChat, runChatCancel } from "./chat.js";
 
 function makeSseResponse(events: string[]): Response {
   const body = events.join("");
@@ -61,5 +61,18 @@ describe("chat", () => {
       stdout: (s) => out.push(s), stderr: () => {},
     });
     expect(out.join("")).toBe("ab\n");
+  });
+});
+
+describe("chat --cancel", () => {
+  it("posts to /v1/hermes/cancel with session id", async () => {
+    const client = { postJson: vi.fn().mockResolvedValue({ ok: true }) };
+    const stderr: string[] = [];
+    await runChatCancel({
+      client: client as any, sessionId: "s1",
+      stderr: (s) => stderr.push(s),
+    });
+    expect(client.postJson).toHaveBeenCalledWith("/v1/hermes/cancel", { sessionId: "s1" });
+    expect(stderr.join("")).toContain("cancel sent");
   });
 });

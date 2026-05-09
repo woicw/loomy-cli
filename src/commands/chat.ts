@@ -62,3 +62,14 @@ export async function runChat(opts: RunChatOpts): Promise<void> {
 function safeParse(s: string): any {
   try { return JSON.parse(s); } catch { return undefined; }
 }
+
+export interface RunChatCancelOpts {
+  client: GatewayClient;
+  sessionId: string;
+  stderr: (s: string) => void;
+}
+
+export async function runChatCancel(opts: RunChatCancelOpts): Promise<void> {
+  await opts.client.postJson("/v1/hermes/cancel", { sessionId: opts.sessionId });
+  opts.stderr(`cancel sent (sessionId=${opts.sessionId})\n`);
+}
