@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
 import { z } from "zod";
 import { CliError } from "./errors.js";
 import { defaultStateDir } from "./state.js";

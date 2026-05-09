@@ -1,4 +1,4 @@
-import { readdirSync, statSync, existsSync, mkdirSync, copyFileSync, rmSync, readlinkSync, symlinkSync } from "node:fs";
+import { readdirSync, existsSync, mkdirSync, copyFileSync, readlinkSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
