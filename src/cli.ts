@@ -11,6 +11,7 @@ import { runPing } from "./commands/ping.js";
 import { runVersion } from "./commands/version.js";
 import { runSessionsList, runSessionsRm } from "./commands/sessions.js";
 import { runChat, runChatCancel, type RenderMode } from "./commands/chat.js";
+import { resolveProjectContext, buildPreamble } from "./context.js";
 import { runInit } from "./commands/init.js";
 import { runInstall, runInstallList } from "./commands/install.js";
 import { defaultAssetsDir, defaultTargetDir } from "./skills.js";
@@ -96,7 +97,10 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .option("--session <id>", "use this session id (overrides last)")
     .option("--new", "force a new session id")
     .option("--cancel", "send cancel for current session, no prompt")
-    .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean }) => {
+    .option("--project <name>", "project name (overrides cwd auto-detect)")
+    .option("--branch <name>", "branch name (overrides git auto-detect)")
+    .option("--no-context", "skip project/branch preamble")
+    .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean; project?: string; branch?: string; context?: boolean }) => {
       const globals = program.opts<GlobalFlags>();
       const client = makeClient(globals);
       if (cmdOpts.cancel) {
@@ -108,8 +112,15 @@ export async function main(argv: string[] = process.argv): Promise<number> {
       if (!message) throw new CliError("usage", "prompt required");
       const sessionId = cmdOpts.session ?? ensureSessionId(defaultStateDir(), Boolean(cmdOpts.new));
       const mode = renderModeFrom(globals);
+      const preamble = cmdOpts.context === false
+        ? null
+        : buildPreamble(resolveProjectContext({
+            cwd: process.cwd(),
+            cliProject: cmdOpts.project,
+            cliBranch: cmdOpts.branch,
+          }));
       await runChat({
-        client, sessionId, message, mode,
+        client, sessionId, message, mode, preamble,
         stdout: (s) => process.stdout.write(s),
         stderr: (s) => process.stderr.write(s),
       });

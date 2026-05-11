@@ -64,6 +64,47 @@ describe("chat", () => {
   });
 });
 
+describe("chat preamble", () => {
+  it("prepends preamble to message when provided", async () => {
+    const client = {
+      postSse: vi.fn().mockResolvedValue(makeSseResponse([
+        "event: done\ndata: {}\n\n",
+      ])),
+    };
+    await runChat({
+      client: client as any,
+      sessionId: "s1",
+      message: "hi",
+      mode: "quiet",
+      preamble: "[项目: foo · 分支: main]",
+      stdout: () => {},
+      stderr: () => {},
+    });
+    expect(client.postSse).toHaveBeenCalledWith("/v1/hermes/chat", {
+      sessionId: "s1",
+      message: "[项目: foo · 分支: main]\n\nhi",
+    });
+  });
+
+  it("sends bare message when preamble is null", async () => {
+    const client = {
+      postSse: vi.fn().mockResolvedValue(makeSseResponse([
+        "event: done\ndata: {}\n\n",
+      ])),
+    };
+    await runChat({
+      client: client as any,
+      sessionId: "s1",
+      message: "hi",
+      mode: "quiet",
+      preamble: null,
+      stdout: () => {},
+      stderr: () => {},
+    });
+    expect(client.postSse).toHaveBeenCalledWith("/v1/hermes/chat", { sessionId: "s1", message: "hi" });
+  });
+});
+
 describe("chat --cancel", () => {
   it("posts to /v1/hermes/cancel with session id", async () => {
     const client = { postJson: vi.fn().mockResolvedValue({ ok: true }) };

@@ -9,14 +9,16 @@ export interface RunChatOpts {
   sessionId: string;
   message: string;
   mode: RenderMode;
+  preamble?: string | null;
   stdout: (s: string) => void;
   stderr: (s: string) => void;
 }
 
 export async function runChat(opts: RunChatOpts): Promise<void> {
+  const message = opts.preamble ? `${opts.preamble}\n\n${opts.message}` : opts.message;
   const res = await opts.client.postSse("/v1/hermes/chat", {
     sessionId: opts.sessionId,
-    message: opts.message,
+    message,
   });
   if (!res.body) throw new CliError("network", "no response body from /v1/hermes/chat");
 
