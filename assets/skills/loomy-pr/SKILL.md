@@ -5,17 +5,14 @@ description: Dispatch a project's PR review / merge workflow to hermes via loomy
 
 # Loomy — PR Workflow Dispatch
 
-PR / merge review work runs on **hermes** (the buildbox). The actual flow (diff analysis, test runs, merge logic) is a hermes-side skill — `merge-review` by default. Your job is to dispatch via `loomy chat`; never simulate the flow locally.
+PR / merge review work runs on **hermes** (the buildbox). The actual merge-review flow is **defined inside the project's own repo** (each project has its own definition of what "merge-review" means: which tests, which reviewers, which checks). It is NOT a hermes-installed skill — hermes reads it from the project tree after the workspace is prepared.
 
-## Workspace context — already handled
+## What hermes already does for you
 
-The hermes-side `project-context-setup` skill auto-runs on every chat and prepares the project workspace from the `loomy chat` preamble. You do **not** need to:
+- **Workspace prep** — `project-context-setup` auto-runs on every chat: cd's to `~/ifly/<project>`, checks out the right branch, asks before cloning a missing project. You don't need to handle any of that.
+- **Project preamble** — `loomy chat` auto-attaches `[项目: X · 分支: Y · 仓库: Z]` from the engineer's git cwd.
 
-- Tell hermes which project to operate on
-- Tell hermes which branch
-- Worry about cwd
-
-If the engineer is in a git repo, `loomy chat` auto-attaches `[项目: X · 分支: Y · 仓库: Z]`. If not, pass `--project` / `--branch` / `--ssh-url` explicitly.
+So your only job is to **dispatch a natural-language request that names the workflow and the PR**. Hermes (after cd'ing into the project) will look for the project's merge-review definition and follow it.
 
 ## When the engineer asks for PR work
 
@@ -23,21 +20,33 @@ If the engineer is in a git repo, `loomy chat` auto-attaches `[项目: X · 分�
 
 2. **Dispatch with `--new`.** Open a fresh session so prior chat context doesn't bleed in:
    ```
-   loomy chat --new "/skill merge-review PR #<num>，<任何额外说明>"
+   loomy chat --new "走当前项目的 merge-review 流程，PR #<num>，<任何额外说明>"
    ```
-   `/skill <name>` is hermes' explicit skill-load syntax. If the project's PR flow uses a different skill name (e.g. `pr-with-screenshots`, `release-merge`), substitute it.
+   The phrasing "**当前项目的 merge-review 流程**" tells hermes:
+   - The workflow is project-defined (not a global skill)
+   - Look inside the project tree for the definition (typical location: `.claude/skills/merge-review/SKILL.md` or wherever the project keeps workflow docs)
+   - Follow whatever that definition says
 
-3. **Default streaming mode.** No `--quiet` / `--json` unless the engineer asks for log-style or JSONL output. The engineer should see progress.
+3. **Default streaming mode.** No `--quiet` / `--json` unless the engineer asks for log-style or JSONL output.
 
-4. **If hermes responds without invoking the skill** (no `Loading skill 'merge-review'` event in the stream, no skill output structure), the skill is probably not installed on hermes (skills live at `~/.hermes/skills/<category>/<name>/`). Tell the engineer; ask whether to install it, or invoke a different existing one.
+4. **If the project has no merge-review definition,** hermes will say so (no file to follow). Tell the engineer:
+   > 项目 `<project>` 里没找到 merge-review 流程定义。要不要先在仓库里加一个？或者用别的工作流名（如 `pr-with-screenshots`、`release-merge`）？
+
+## Naming
+
+`merge-review` is the **default convention**, not a fixed name. If a project uses another name (e.g. `pr-with-screenshots`, `release-flow`, `quick-review`), substitute it:
+
+```
+loomy chat --new "走当前项目的 <skill-name> 流程，PR #<num>"
+```
 
 ## Targeting a project not yet on hermes
 
-If the project isn't checked out on hermes yet, `project-context-setup` will ask whether to clone first. To pre-supply the ssh url so the engineer only sees one yes/no instead of a "no ssh url, please retry" round-trip:
+If the project isn't checked out on hermes yet, `project-context-setup` will ask whether to clone first. To pre-supply the ssh url so the engineer only sees one yes/no prompt instead of a "no ssh url, please retry" round-trip:
 
 ```
 loomy chat --new --ssh-url git@github.com:org/<project>.git \
-  "/skill merge-review PR #<num>"
+  "走当前项目的 merge-review 流程，PR #<num>"
 ```
 
 ## Following up
@@ -48,12 +57,14 @@ After the workflow finishes, the session is alive. Continue with bare `loomy cha
 loomy chat "<follow-up>"
 ```
 
-Don't use `loomy chat --cancel` for follow-ups — cancel drops in-flight state and is only for aborting a stuck workflow.
+Don't use `loomy chat --cancel` for follow-ups — cancel drops in-flight state. Use it only to abort a stuck workflow.
 
 ## Anti-patterns
 
 - Don't simulate PR review locally (running tests, fetching diffs, building). Hermes has the project clone, the toolchain, and the right env — you don't.
 - Don't issue raw HTTP to the gateway. Use `loomy chat`.
-- Don't modify project skill files from the Mac; that's a separate task on the project repo.
-- Don't invent a PR number or branch the engineer didn't give you.
+- Don't try to install merge-review onto hermes (e.g. `~/.hermes/skills/`). It's project-defined; it lives in the project repo and stays there.
+- Don't modify the project's merge-review definition from the Mac. If the workflow needs changes, that's a separate task on the project repo (work on it via hermes too, not by editing files on your Mac).
 - Don't pre-resolve project / branch into the prompt text — the preamble is the channel for that, and project-context-setup handles it on the hermes end.
+- Don't invent a PR number or branch the engineer didn't give you.
+- Don't use `/skill merge-review` — that's hermes' explicit-load syntax for hermes-installed skills, but merge-review isn't one of those.
