@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInit } from "./init.js";
@@ -42,16 +42,4 @@ describe("init non-interactive", () => {
     expect(out.join("")).toMatch(/healthz/i);
   });
 
-  it("migrates legacy buildbox-secrets.txt API_TOKEN into the prompt default (non-interactive: as default value)", async () => {
-    writeFileSync(join(dir, "buildbox-secrets.txt"), "FRP_TOKEN=foo\nAPI_TOKEN=LEGACY\n");
-    globalThis.fetch = vi.fn(async () => new Response("{}", { status: 200 })) as any;
-    const out: string[] = [];
-    await runInit({
-      stateDir: dir,
-      flags: { yes: true }, // no apiToken supplied; should pick up legacy
-      stderr: (s) => out.push(s),
-    });
-    const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
-    expect(cred.apiToken).toBe("LEGACY");
-  });
 });

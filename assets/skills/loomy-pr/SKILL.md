@@ -9,7 +9,7 @@ PR / merge review work runs on **hermes** (the buildbox). The actual merge-revie
 
 ## What hermes already does for you
 
-- **Workspace prep** — `project-context-setup` auto-runs on every chat: cd's to `~/ifly/<project>`, checks out the right branch, asks before cloning a missing project. You don't need to handle any of that.
+- **Workspace prep** — a hermes-side bootstrap skill auto-runs on every chat: it ensures the project is checked out on hermes, on the right branch, and asks before cloning a missing project. You don't need to handle any of that.
 - **Project preamble** — `loomy chat` auto-attaches `[项目: X · 分支: Y · 仓库: Z]` from the engineer's git cwd.
 
 So your only job is to **dispatch a natural-language request that names the workflow and the PR**. Hermes (after cd'ing into the project) will look for the project's merge-review definition and follow it.

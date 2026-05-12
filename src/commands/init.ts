@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { input, password, confirm } from "@inquirer/prompts";
 import { writeCredentials, readCredentials } from "../config.js";
@@ -13,23 +12,14 @@ export interface RunInitOpts {
     askEndpoint: (defaultValue: string) => Promise<string>;
     askToken: (defaultValue: string) => Promise<string>;
     confirmOverwrite: () => Promise<boolean>;
-    confirmDeleteLegacy: () => Promise<boolean>;
   };
-}
-
-function legacyToken(stateDir: string): string | null {
-  const p = join(stateDir, "buildbox-secrets.txt");
-  if (!existsSync(p)) return null;
-  const m = readFileSync(p, "utf8").match(/^API_TOKEN=(.+)$/m);
-  return m?.[1] ?? null;
 }
 
 export async function runInit(opts: RunInitOpts): Promise<void> {
   const existing = (() => { try { return readCredentials(opts.stateDir); } catch { return null; } })();
-  const legacy = legacyToken(opts.stateDir);
 
   const wantEndpoint = opts.flags.endpoint ?? existing?.endpoint ?? "";
-  const tokenDefault = opts.flags.apiToken ?? existing?.apiToken ?? legacy ?? "";
+  const tokenDefault = opts.flags.apiToken ?? existing?.apiToken ?? "";
 
   let endpoint: string;
   let apiToken: string;
@@ -42,7 +32,6 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
       askEndpoint: (def: string) => input({ message: "Gateway endpoint", default: def }),
       askToken: (def: string) => password({ message: "API token", mask: "*" }).then((v) => v || def),
       confirmOverwrite: () => confirm({ message: "credentials.json exists. Overwrite?", default: false }),
-      confirmDeleteLegacy: () => confirm({ message: "Delete legacy buildbox-secrets.txt?", default: false }),
     };
     if (existing && !opts.flags.yes) {
       const ok = await p.confirmOverwrite();
