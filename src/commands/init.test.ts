@@ -30,6 +30,28 @@ describe("init non-interactive", () => {
     expect(cred).toEqual({ endpoint: "http://x", apiToken: "TOK" });
   });
 
+  it("persists --workspace-root flag value", async () => {
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
+    await runInit({
+      stateDir: dir,
+      flags: { endpoint: "http://x", apiToken: "TOK", workspaceRoot: "~/code", yes: true },
+      stderr: () => {},
+    });
+    const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
+    expect(cred.workspaceRoot).toBe("~/code");
+  });
+
+  it("omits workspaceRoot from credentials when neither flag nor existing value set", async () => {
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
+    await runInit({
+      stateDir: dir,
+      flags: { endpoint: "http://x", apiToken: "TOK", yes: true },
+      stderr: () => {},
+    });
+    const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
+    expect("workspaceRoot" in cred).toBe(false);
+  });
+
   it("warns but still writes when /healthz fails", async () => {
     globalThis.fetch = vi.fn(async () => new Response("Unauthorized", { status: 401 })) as any;
     const out: string[] = [];

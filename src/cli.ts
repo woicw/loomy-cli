@@ -100,7 +100,7 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .option("--project <name>", "project name (overrides cwd auto-detect)")
     .option("--branch <name>", "branch name (overrides git auto-detect)")
     .option("--ssh-url <url>", "repo ssh url (overrides remote.origin.url auto-detect)")
-    .option("--workspace-root <path>", "hermes-side workspace root (overrides config)")
+    .option("--workspace-root <path>", "remote workspace root (overrides config)")
     .option("--no-context", "skip project/branch/repo preamble")
     .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean; project?: string; branch?: string; sshUrl?: string; workspaceRoot?: string; context?: boolean }) => {
       const globals = program.opts<GlobalFlags>();
@@ -115,16 +115,22 @@ export async function main(argv: string[] = process.argv): Promise<number> {
       if (!message) throw new CliError("usage", "prompt required");
       const sessionId = cmdOpts.session ?? ensureSessionId(defaultStateDir(), Boolean(cmdOpts.new));
       const mode = renderModeFrom(globals);
-      const preamble = cmdOpts.context === false
-        ? null
-        : buildPreamble(resolveProjectContext({
-            cwd: process.cwd(),
-            cliProject: cmdOpts.project,
-            cliBranch: cmdOpts.branch,
-            cliRepoUrl: cmdOpts.sshUrl,
-            cliWorkspaceRoot: cmdOpts.workspaceRoot,
-            configWorkspaceRoot: cfg.workspaceRoot,
-          }));
+      let preamble: string | null = null;
+      if (cmdOpts.context !== false) {
+        const ctx = resolveProjectContext({
+          cwd: process.cwd(),
+          cliProject: cmdOpts.project,
+          cliBranch: cmdOpts.branch,
+          cliRepoUrl: cmdOpts.sshUrl,
+          cliWorkspaceRoot: cmdOpts.workspaceRoot,
+          configWorkspaceRoot: cfg.workspaceRoot ?? undefined,
+        });
+        const hasContext = ctx.project || ctx.branch || ctx.repoUrl;
+        if (hasContext && !ctx.workspaceRoot) {
+          throw new CliError("usage", "workspace root not configured. run `loomy init --workspace-root <path>` to set it, pass --workspace-root, or use --no-context to skip the preamble.");
+        }
+        preamble = buildPreamble(ctx);
+      }
       await runChat({
         client, sessionId, message, mode, preamble,
         stdout: (s) => process.stdout.write(s),
@@ -137,7 +143,7 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .description("write ~/.loomy-cli/credentials.json")
     .option("--endpoint <url>", "gateway endpoint")
     .option("--api-token <s>", "API token (skips prompt)")
-    .option("--workspace-root <path>", "hermes-side workspace root (default ~/ifly)")
+    .option("--workspace-root <path>", "remote workspace root where projects are checked out")
     .option("--yes", "non-interactive: accept defaults / overwrite")
     .action(async (cmdOpts: { endpoint?: string; apiToken?: string; workspaceRoot?: string; yes?: boolean }) => {
       await runInit({

@@ -5,7 +5,7 @@ description: Use the `loomy` CLI to talk to Hermes via the Loomy gateway. Trigge
 
 # Loomy CLI Basics
 
-The `loomy` command on this Mac forwards requests to the Loomy gateway over a public reverse tunnel. Use it instead of curl for any Hermes interaction.
+The `loomy` command forwards requests to the Loomy gateway. Use it instead of curl for any Hermes interaction.
 
 ## Commands
 
@@ -34,6 +34,6 @@ The `loomy` command on this Mac forwards requests to the Loomy gateway over a pu
 
 ## When to invoke
 
-- Any time the user asks to talk to hermes / Loomy / "the agent on the buildbox", prefer `loomy chat` over a custom HTTP call.
+- Any time the user asks to talk to hermes / Loomy / the remote agent, prefer `loomy chat` over a custom HTTP call.
 - For long replies, use the default streaming mode so the user sees progress.
 - For scripted automation, use `--quiet` (capture full reply) or `--json` (structured parsing).

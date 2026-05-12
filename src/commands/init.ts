@@ -11,6 +11,7 @@ export interface RunInitOpts {
   prompts?: {
     askEndpoint: (defaultValue: string) => Promise<string>;
     askToken: (defaultValue: string) => Promise<string>;
+    askWorkspaceRoot: (defaultValue: string) => Promise<string>;
     confirmOverwrite: () => Promise<boolean>;
   };
 }
@@ -20,18 +21,21 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
 
   const wantEndpoint = opts.flags.endpoint ?? existing?.endpoint ?? "";
   const tokenDefault = opts.flags.apiToken ?? existing?.apiToken ?? "";
-  const workspaceRoot = opts.flags.workspaceRoot ?? existing?.workspaceRoot;
+  const workspaceDefault = opts.flags.workspaceRoot ?? existing?.workspaceRoot ?? "";
 
   let endpoint: string;
   let apiToken: string;
+  let workspaceRoot: string;
 
   if (opts.flags.yes && (opts.flags.apiToken || tokenDefault)) {
     endpoint = wantEndpoint;
     apiToken = opts.flags.apiToken ?? tokenDefault;
+    workspaceRoot = workspaceDefault;
   } else {
     const p = opts.prompts ?? {
       askEndpoint: (def: string) => input({ message: "Gateway endpoint", default: def }),
       askToken: (def: string) => password({ message: "API token", mask: "*" }).then((v) => v || def),
+      askWorkspaceRoot: (def: string) => input({ message: "Workspace root on remote host (where projects are checked out, e.g. ~/projects)", default: def }),
       confirmOverwrite: () => confirm({ message: "credentials.json exists. Overwrite?", default: false }),
     };
     if (existing && !opts.flags.yes) {
@@ -44,6 +48,7 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
     endpoint = await p.askEndpoint(wantEndpoint);
     apiToken = await p.askToken(tokenDefault);
     if (!apiToken) throw new CliError("usage", "apiToken is required");
+    workspaceRoot = await p.askWorkspaceRoot(workspaceDefault);
   }
 
   writeCredentials(opts.stateDir, { endpoint, apiToken, ...(workspaceRoot ? { workspaceRoot } : {}) });

@@ -11,12 +11,10 @@ const CredentialsSchema = z.object({
 });
 export type Credentials = z.infer<typeof CredentialsSchema>;
 
-export const DEFAULT_WORKSPACE_ROOT = "~/ifly";
-
 export interface Config {
   endpoint: string;
   apiToken: string;
-  workspaceRoot: string;
+  workspaceRoot: string | null;
 }
 
 export interface LoadConfigInput {
@@ -55,7 +53,7 @@ export function loadConfig(input: LoadConfigInput = {}): Config {
   const file = readCredentials(stateDir);
   const apiToken = flags.token ?? env.LOOMY_API_TOKEN ?? file?.apiToken;
   const endpoint = flags.endpoint ?? env.LOOMY_ENDPOINT ?? file?.endpoint;
-  const workspaceRoot = env.LOOMY_WORKSPACE_ROOT ?? file?.workspaceRoot ?? DEFAULT_WORKSPACE_ROOT;
+  const workspaceRoot = env.LOOMY_WORKSPACE_ROOT ?? file?.workspaceRoot ?? null;
 
   if (!apiToken) {
     throw new CliError("auth", "No token. Run `loomy init` to set one, or pass --token / LOOMY_API_TOKEN.");

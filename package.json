@@ -18,7 +18,7 @@
     "assets"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && pnpm copy:assets",
+    "build": "tsc -p tsconfig.build.json && pnpm copy:assets",
     "copy:assets": "rm -rf dist/assets && cp -R assets dist/assets",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",

@@ -5,7 +5,7 @@ description: Dispatch a project's PR review / merge workflow to hermes via loomy
 
 # Loomy — PR Workflow Dispatch
 
-PR / merge review work runs on **hermes** (the buildbox). The actual merge-review flow is **defined inside the project's own repo** (each project has its own definition of what "merge-review" means: which tests, which reviewers, which checks). It is NOT a hermes-installed skill — hermes reads it from the project tree after the workspace is prepared.
+PR / merge review work runs on the **remote hermes host**. The actual merge-review flow is **defined inside the project's own repo** (each project has its own definition of what "merge-review" means: which tests, which reviewers, which checks). It is NOT a hermes-installed skill — hermes reads it from the project tree after the workspace is prepared.
 
 ## What hermes already does for you
 
