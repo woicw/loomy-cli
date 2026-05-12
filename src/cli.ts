@@ -100,9 +100,11 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .option("--project <name>", "project name (overrides cwd auto-detect)")
     .option("--branch <name>", "branch name (overrides git auto-detect)")
     .option("--ssh-url <url>", "repo ssh url (overrides remote.origin.url auto-detect)")
+    .option("--workspace-root <path>", "hermes-side workspace root (overrides config)")
     .option("--no-context", "skip project/branch/repo preamble")
-    .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean; project?: string; branch?: string; sshUrl?: string; context?: boolean }) => {
+    .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean; project?: string; branch?: string; sshUrl?: string; workspaceRoot?: string; context?: boolean }) => {
       const globals = program.opts<GlobalFlags>();
+      const cfg = loadConfig({ flags: { token: globals.token, endpoint: globals.endpoint } });
       const client = makeClient(globals);
       if (cmdOpts.cancel) {
         const sessionId = cmdOpts.session ?? ensureSessionId(defaultStateDir(), false);
@@ -120,6 +122,8 @@ export async function main(argv: string[] = process.argv): Promise<number> {
             cliProject: cmdOpts.project,
             cliBranch: cmdOpts.branch,
             cliRepoUrl: cmdOpts.sshUrl,
+            cliWorkspaceRoot: cmdOpts.workspaceRoot,
+            configWorkspaceRoot: cfg.workspaceRoot,
           }));
       await runChat({
         client, sessionId, message, mode, preamble,
@@ -133,11 +137,12 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .description("write ~/.loomy-cli/credentials.json")
     .option("--endpoint <url>", "gateway endpoint")
     .option("--api-token <s>", "API token (skips prompt)")
+    .option("--workspace-root <path>", "hermes-side workspace root (default ~/ifly)")
     .option("--yes", "non-interactive: accept defaults / overwrite")
-    .action(async (cmdOpts: { endpoint?: string; apiToken?: string; yes?: boolean }) => {
+    .action(async (cmdOpts: { endpoint?: string; apiToken?: string; workspaceRoot?: string; yes?: boolean }) => {
       await runInit({
         stateDir: defaultStateDir(),
-        flags: { endpoint: cmdOpts.endpoint, apiToken: cmdOpts.apiToken, yes: cmdOpts.yes },
+        flags: { endpoint: cmdOpts.endpoint, apiToken: cmdOpts.apiToken, workspaceRoot: cmdOpts.workspaceRoot, yes: cmdOpts.yes },
         stderr: (s) => process.stderr.write(s),
       });
     });

@@ -5,7 +5,7 @@ import { CliError } from "../errors.js";
 
 export interface RunInitOpts {
   stateDir: string;
-  flags: { endpoint?: string; apiToken?: string; yes?: boolean };
+  flags: { endpoint?: string; apiToken?: string; workspaceRoot?: string; yes?: boolean };
   stderr: (s: string) => void;
   /** Override interactive prompts for tests. */
   prompts?: {
@@ -20,6 +20,7 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
 
   const wantEndpoint = opts.flags.endpoint ?? existing?.endpoint ?? "";
   const tokenDefault = opts.flags.apiToken ?? existing?.apiToken ?? "";
+  const workspaceRoot = opts.flags.workspaceRoot ?? existing?.workspaceRoot;
 
   let endpoint: string;
   let apiToken: string;
@@ -45,7 +46,7 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
     if (!apiToken) throw new CliError("usage", "apiToken is required");
   }
 
-  writeCredentials(opts.stateDir, { endpoint, apiToken });
+  writeCredentials(opts.stateDir, { endpoint, apiToken, ...(workspaceRoot ? { workspaceRoot } : {}) });
   opts.stderr(`wrote ${join(opts.stateDir, "credentials.json")} (mode 600)\n`);
 
   // healthz validation — no rollback on failure, just warn

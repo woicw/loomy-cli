@@ -34,7 +34,7 @@ describe("resolveProjectContext", () => {
         gitBranch: () => "main",
         gitRemoteUrl: () => "git@github.com:me/myproj.git",
       }),
-    ).toEqual({ project: "myproj", branch: "main", repoUrl: "git@github.com:me/myproj.git" });
+    ).toEqual({ project: "myproj", branch: "main", repoUrl: "git@github.com:me/myproj.git", workspaceRoot: null });
   });
 
   it("cliBranch overrides git", () => {
@@ -68,7 +68,7 @@ describe("resolveProjectContext", () => {
         gitBranch: () => null,
         gitRemoteUrl: () => null,
       }),
-    ).toEqual({ project: null, branch: null, repoUrl: null });
+    ).toEqual({ project: null, branch: null, repoUrl: null, workspaceRoot: null });
   });
 
   it("only project set keeps branch null", () => {
@@ -81,7 +81,7 @@ describe("resolveProjectContext", () => {
         gitBranch: () => null,
         gitRemoteUrl: () => null,
       }),
-    ).toEqual({ project: "p", branch: null, repoUrl: null });
+    ).toEqual({ project: "p", branch: null, repoUrl: null, workspaceRoot: null });
   });
 
   it("cliRepoUrl overrides everything", () => {
@@ -120,32 +120,82 @@ describe("resolveProjectContext", () => {
       }).repoUrl,
     ).toBe("git@gh.com:me/auto.git");
   });
+
+  it("cliWorkspaceRoot overrides env and config", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliWorkspaceRoot: "~/explicit",
+        configWorkspaceRoot: "~/from-config",
+        env: { LOOMY_WORKSPACE_ROOT: "~/from-env" },
+        gitRoot: () => null,
+        gitBranch: () => null,
+        gitRemoteUrl: () => null,
+      }).workspaceRoot,
+    ).toBe("~/explicit");
+  });
+
+  it("LOOMY_WORKSPACE_ROOT overrides config when no cli flag", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        configWorkspaceRoot: "~/from-config",
+        env: { LOOMY_WORKSPACE_ROOT: "~/from-env" },
+        gitRoot: () => null,
+        gitBranch: () => null,
+        gitRemoteUrl: () => null,
+      }).workspaceRoot,
+    ).toBe("~/from-env");
+  });
+
+  it("configWorkspaceRoot used when no cli flag or env", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        configWorkspaceRoot: "~/from-config",
+        env: {},
+        gitRoot: () => null,
+        gitBranch: () => null,
+        gitRemoteUrl: () => null,
+      }).workspaceRoot,
+    ).toBe("~/from-config");
+  });
 });
 
 describe("buildPreamble", () => {
   it("returns null when all fields missing", () => {
-    expect(buildPreamble({ project: null, branch: null, repoUrl: null })).toBeNull();
+    expect(buildPreamble({ project: null, branch: null, repoUrl: null, workspaceRoot: null })).toBeNull();
   });
 
   it("formats project-only", () => {
-    expect(buildPreamble({ project: "foo", branch: null, repoUrl: null })).toBe("[项目: foo]");
+    expect(buildPreamble({ project: "foo", branch: null, repoUrl: null, workspaceRoot: null })).toBe("[项目: foo]");
   });
 
   it("formats branch-only", () => {
-    expect(buildPreamble({ project: null, branch: "main", repoUrl: null })).toBe("[分支: main]");
+    expect(buildPreamble({ project: null, branch: "main", repoUrl: null, workspaceRoot: null })).toBe("[分支: main]");
   });
 
   it("formats project+branch with · separator", () => {
-    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: null })).toBe("[项目: foo · 分支: main]");
+    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: null, workspaceRoot: null })).toBe("[项目: foo · 分支: main]");
   });
 
-  it("formats all three fields", () => {
-    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: "git@gh.com:me/foo.git" }))
+  it("formats project+branch+repo", () => {
+    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: "git@gh.com:me/foo.git", workspaceRoot: null }))
       .toBe("[项目: foo · 分支: main · 仓库: git@gh.com:me/foo.git]");
   });
 
   it("formats repo-only", () => {
-    expect(buildPreamble({ project: null, branch: null, repoUrl: "git@gh.com:me/foo.git" }))
+    expect(buildPreamble({ project: null, branch: null, repoUrl: "git@gh.com:me/foo.git", workspaceRoot: null }))
       .toBe("[仓库: git@gh.com:me/foo.git]");
+  });
+
+  it("formats workspaceRoot when present", () => {
+    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: null, workspaceRoot: "~/ifly" }))
+      .toBe("[项目: foo · 分支: main · 根目录: ~/ifly]");
+  });
+
+  it("formats all four fields in order", () => {
+    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: "git@gh.com:me/foo.git", workspaceRoot: "~/code" }))
+      .toBe("[项目: foo · 分支: main · 仓库: git@gh.com:me/foo.git · 根目录: ~/code]");
   });
 });
