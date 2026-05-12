@@ -32,8 +32,9 @@ describe("resolveProjectContext", () => {
         env: {},
         gitRoot: () => "/users/me/code/myproj",
         gitBranch: () => "main",
+        gitRemoteUrl: () => "git@github.com:me/myproj.git",
       }),
-    ).toEqual({ project: "myproj", branch: "main" });
+    ).toEqual({ project: "myproj", branch: "main", repoUrl: "git@github.com:me/myproj.git" });
   });
 
   it("cliBranch overrides git", () => {
@@ -65,8 +66,9 @@ describe("resolveProjectContext", () => {
         env: {},
         gitRoot: () => null,
         gitBranch: () => null,
+        gitRemoteUrl: () => null,
       }),
-    ).toEqual({ project: null, branch: null });
+    ).toEqual({ project: null, branch: null, repoUrl: null });
   });
 
   it("only project set keeps branch null", () => {
@@ -77,25 +79,73 @@ describe("resolveProjectContext", () => {
         env: {},
         gitRoot: () => null,
         gitBranch: () => null,
+        gitRemoteUrl: () => null,
       }),
-    ).toEqual({ project: "p", branch: null });
+    ).toEqual({ project: "p", branch: null, repoUrl: null });
+  });
+
+  it("cliRepoUrl overrides everything", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliRepoUrl: "git@gh.com:me/explicit.git",
+        env: { LOOMY_REPO: "git@gh.com:me/from-env.git" },
+        gitRoot: () => "/x",
+        gitBranch: () => "main",
+        gitRemoteUrl: () => "git@gh.com:me/auto.git",
+      }).repoUrl,
+    ).toBe("git@gh.com:me/explicit.git");
+  });
+
+  it("LOOMY_REPO used when cli flag absent", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        env: { LOOMY_REPO: "git@gh.com:me/from-env.git" },
+        gitRoot: () => "/x",
+        gitBranch: () => "main",
+        gitRemoteUrl: () => "git@gh.com:me/auto.git",
+      }).repoUrl,
+    ).toBe("git@gh.com:me/from-env.git");
+  });
+
+  it("git remote.origin.url used when nothing else set", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        env: {},
+        gitRoot: () => "/x",
+        gitBranch: () => "main",
+        gitRemoteUrl: () => "git@gh.com:me/auto.git",
+      }).repoUrl,
+    ).toBe("git@gh.com:me/auto.git");
   });
 });
 
 describe("buildPreamble", () => {
-  it("returns null when both fields missing", () => {
-    expect(buildPreamble({ project: null, branch: null })).toBeNull();
+  it("returns null when all fields missing", () => {
+    expect(buildPreamble({ project: null, branch: null, repoUrl: null })).toBeNull();
   });
 
   it("formats project-only", () => {
-    expect(buildPreamble({ project: "foo", branch: null })).toBe("[项目: foo]");
+    expect(buildPreamble({ project: "foo", branch: null, repoUrl: null })).toBe("[项目: foo]");
   });
 
   it("formats branch-only", () => {
-    expect(buildPreamble({ project: null, branch: "main" })).toBe("[分支: main]");
+    expect(buildPreamble({ project: null, branch: "main", repoUrl: null })).toBe("[分支: main]");
   });
 
-  it("formats both with · separator", () => {
-    expect(buildPreamble({ project: "foo", branch: "main" })).toBe("[项目: foo · 分支: main]");
+  it("formats project+branch with · separator", () => {
+    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: null })).toBe("[项目: foo · 分支: main]");
+  });
+
+  it("formats all three fields", () => {
+    expect(buildPreamble({ project: "foo", branch: "main", repoUrl: "git@gh.com:me/foo.git" }))
+      .toBe("[项目: foo · 分支: main · 仓库: git@gh.com:me/foo.git]");
+  });
+
+  it("formats repo-only", () => {
+    expect(buildPreamble({ project: null, branch: null, repoUrl: "git@gh.com:me/foo.git" }))
+      .toBe("[仓库: git@gh.com:me/foo.git]");
   });
 });

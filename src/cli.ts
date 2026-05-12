@@ -99,8 +99,9 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .option("--cancel", "send cancel for current session, no prompt")
     .option("--project <name>", "project name (overrides cwd auto-detect)")
     .option("--branch <name>", "branch name (overrides git auto-detect)")
-    .option("--no-context", "skip project/branch preamble")
-    .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean; project?: string; branch?: string; context?: boolean }) => {
+    .option("--ssh-url <url>", "repo ssh url (overrides remote.origin.url auto-detect)")
+    .option("--no-context", "skip project/branch/repo preamble")
+    .action(async (promptParts: string[], cmdOpts: { session?: string; new?: boolean; cancel?: boolean; project?: string; branch?: string; sshUrl?: string; context?: boolean }) => {
       const globals = program.opts<GlobalFlags>();
       const client = makeClient(globals);
       if (cmdOpts.cancel) {
@@ -118,6 +119,7 @@ export async function main(argv: string[] = process.argv): Promise<number> {
             cwd: process.cwd(),
             cliProject: cmdOpts.project,
             cliBranch: cmdOpts.branch,
+            cliRepoUrl: cmdOpts.sshUrl,
           }));
       await runChat({
         client, sessionId, message, mode, preamble,
