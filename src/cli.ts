@@ -200,6 +200,9 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     if (!ctx.repoUrl) {
       throw new CliError("usage", "no remote git URL detected. configure 'git remote add origin <url>', pass --ssh-url <url>, set LOOMY_REPO, or use `loomy chat --no-context` to skip the preamble entirely.");
     }
+    if (!ctx.workspaceRoot) {
+      throw new CliError("usage", "workspace root not configured. run `loomy init --workspace-root <path>` to set it.");
+    }
     const preamble = buildPreamble(ctx);
     const sessionId = ensureSessionId(defaultStateDir(), true);
     await runRepl({

@@ -14,7 +14,6 @@ export interface ReplState {
   turns: Turn[];
   streaming: boolean;
   sessionId: string;
-  queuedNext?: string;
   exitArmed: boolean;
 }
 
@@ -34,7 +33,6 @@ export interface ReplStore {
       | { status: "error"; errorMessage: string },
   ): void;
   clearTurns(): void;
-  setQueued(text: string | undefined): void;
   setExitArmed(armed: boolean): void;
 }
 
@@ -98,9 +96,6 @@ export function createStore(init: { sessionId: string }): ReplStore {
       mutate({ streaming: false });
     },
     clearTurns() { mutate({ turns: [] }); },
-    setQueued(text) {
-      mutate({ queuedNext: text });
-    },
     setExitArmed(armed) {
       mutate({ exitArmed: armed });
     },

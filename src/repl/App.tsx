@@ -55,6 +55,10 @@ export function App(props: AppProps) {
       storeRef.current.endTurn({ status: "error", errorMessage: `unknown command: /${slash.cmd} (try /help)` });
       return;
     }
+    // Non-slash input during streaming: drop to avoid state corruption from
+    // beginTurn-while-streaming. Ctrl+C is the way to interrupt; non-slash
+    // messages typed mid-stream are lost (MVP — queueing is v1.x backlog).
+    if (storeRef.current.getState().streaming) return;
     const message = props.preamble ? `${props.preamble}\n\n${text}` : text;
     storeRef.current.beginTurn(text);
     try {
