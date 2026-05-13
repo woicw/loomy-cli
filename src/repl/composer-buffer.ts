@@ -52,3 +52,28 @@ export function backspace(b: BufferState): BufferState {
   newLines[b.cursor.row] = next;
   return { lines: newLines, cursor: { row: b.cursor.row, col: b.cursor.col - 1 } };
 }
+
+export type MoveDir = "left" | "right" | "up" | "down";
+
+export function moveCursor(b: BufferState, dir: MoveDir): BufferState {
+  const { row, col } = b.cursor;
+  if (dir === "left") {
+    if (col > 0) return { ...b, cursor: { row, col: col - 1 } };
+    if (row > 0) return { ...b, cursor: { row: row - 1, col: (b.lines[row - 1] ?? "").length } };
+    return b;
+  }
+  if (dir === "right") {
+    const lineLen = (b.lines[row] ?? "").length;
+    if (col < lineLen) return { ...b, cursor: { row, col: col + 1 } };
+    if (row < b.lines.length - 1) return { ...b, cursor: { row: row + 1, col: 0 } };
+    return b;
+  }
+  if (dir === "up") {
+    if (row === 0) return b;
+    const prevLen = (b.lines[row - 1] ?? "").length;
+    return { ...b, cursor: { row: row - 1, col: Math.min(col, prevLen) } };
+  }
+  if (row >= b.lines.length - 1) return b;
+  const nextLen = (b.lines[row + 1] ?? "").length;
+  return { ...b, cursor: { row: row + 1, col: Math.min(col, nextLen) } };
+}

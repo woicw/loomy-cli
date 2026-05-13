@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { emptyBuffer, insertChar, backspace, type BufferState } from "./composer-buffer.js";
+import { emptyBuffer, insertChar, backspace, moveCursor, type BufferState } from "./composer-buffer.js";
 
 describe("composer-buffer initial state", () => {
   it("emptyBuffer has one empty line and cursor at 0,0", () => {
@@ -49,5 +49,27 @@ describe("backspace", () => {
   it("no-op at start of first line", () => {
     const b = emptyBuffer();
     expect(backspace(b)).toEqual(b);
+  });
+});
+
+describe("moveCursor", () => {
+  it("right within line", () => {
+    expect(moveCursor({ lines: ["abc"], cursor: { row: 0, col: 1 } }, "right").cursor).toEqual({ row: 0, col: 2 });
+  });
+  it("right at end wraps to next line", () => {
+    const b: BufferState = { lines: ["ab", "cd"], cursor: { row: 0, col: 2 } };
+    expect(moveCursor(b, "right").cursor).toEqual({ row: 1, col: 0 });
+  });
+  it("left at start wraps to prev line end", () => {
+    const b: BufferState = { lines: ["ab", "cd"], cursor: { row: 1, col: 0 } };
+    expect(moveCursor(b, "left").cursor).toEqual({ row: 0, col: 2 });
+  });
+  it("up moves to same col on prev line, clamped", () => {
+    const b: BufferState = { lines: ["a", "bcde"], cursor: { row: 1, col: 3 } };
+    expect(moveCursor(b, "up").cursor).toEqual({ row: 0, col: 1 });
+  });
+  it("down at last line is no-op", () => {
+    const b: BufferState = { lines: ["abc"], cursor: { row: 0, col: 2 } };
+    expect(moveCursor(b, "down")).toEqual(b);
   });
 });
