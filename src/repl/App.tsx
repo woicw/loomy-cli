@@ -46,6 +46,10 @@ export function App(props: AppProps) {
         storeRef.current.endTurn({ status: "done", stopReason: "help" });
         return;
       }
+      if (slash.cmd === "cancel") {
+        handleCancel();
+        return;
+      }
       // unknown slash → show synthetic error turn
       storeRef.current.beginTurn(text);
       storeRef.current.endTurn({ status: "error", errorMessage: `unknown command: /${slash.cmd} (try /help)` });

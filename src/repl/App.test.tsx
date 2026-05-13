@@ -74,4 +74,27 @@ describe("<App/>", () => {
     await new Promise((r) => setTimeout(r, 30));
     expect(lastFrame()).not.toContain("> hi");
   });
+
+  it("/cancel during streaming interrupts the turn", async () => {
+    const cancelMock = vi.fn(async () => {});
+    const deps = {
+      ...makeDeps(),
+      cancel: cancelMock,
+      streamFactory: async function* () {
+        yield { kind: "delta" as const, text: "abc" };
+        await new Promise((r) => setTimeout(r, 1000)); // hang
+      },
+    };
+    const { stdin, lastFrame } = render(<App {...deps} />);
+    stdin.write("hello");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    stdin.write("/cancel");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(cancelMock).toHaveBeenCalled();
+    expect(lastFrame()).toContain("^C cancelled");
+  });
 });
