@@ -38,4 +38,15 @@ describe("<App/>", () => {
     expect(out).toContain("> ping");
     expect(out).toContain("Hi there");
   });
+
+  it("/new generates a fresh sessionId in the banner", async () => {
+    const deps = makeDeps();
+    const { stdin, lastFrame } = render(<App {...deps} />);
+    stdin.write("/new");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    const out = lastFrame() ?? "";
+    expect(out).not.toContain("sid-1".slice(0, 8));
+  });
 });

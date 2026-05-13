@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { randomUUID } from "node:crypto";
 import { Box, useApp } from "ink";
 import { Banner } from "./Banner.js";
 import { Transcript } from "./Transcript.js";
@@ -30,8 +31,12 @@ export function App(props: AppProps) {
   const sendPrompt = async (text: string) => {
     const slash = parseSlash(text);
     if (slash) {
-      if (slash.cmd === "exit" || slash.cmd === "quit") exit();
-      // other slash commands: leave to v1.x; ignore for now
+      if (slash.cmd === "exit" || slash.cmd === "quit") { exit(); return; }
+      if (slash.cmd === "new") {
+        const fresh = randomUUID();
+        storeRef.current.setSessionId(fresh);
+        return;
+      }
       return;
     }
     const message = props.preamble ? `${props.preamble}\n\n${text}` : text;
