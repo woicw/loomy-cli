@@ -25,6 +25,7 @@ export function App(props: AppProps) {
   const exitTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => storeRef.current.subscribe(setState), []);
+  useEffect(() => () => { if (exitTimer.current) clearTimeout(exitTimer.current); }, []);
 
   const sendPrompt = async (text: string) => {
     const slash = parseSlash(text);
@@ -36,7 +37,7 @@ export function App(props: AppProps) {
     const message = props.preamble ? `${props.preamble}\n\n${text}` : text;
     storeRef.current.beginTurn(text);
     try {
-      for await (const ev of props.streamFactory({ sessionId: state.sessionId, message })) {
+      for await (const ev of props.streamFactory({ sessionId: storeRef.current.getState().sessionId, message })) {
         if (ev.kind === "delta") storeRef.current.appendAssistant(ev.text);
         else if (ev.kind === "tool") {
           const p: any = ev.payload;
