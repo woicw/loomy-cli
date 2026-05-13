@@ -140,15 +140,16 @@ export async function main(argv: string[] = process.argv): Promise<number> {
 
   program
     .command("init")
-    .description("write ~/.loomy-cli/credentials.json")
-    .option("--endpoint <url>", "gateway endpoint")
-    .option("--api-token <s>", "API token (skips prompt)")
+    .description("write ~/.loomy-cli/credentials.json (resolves token by username via ssh)")
+    .option("--user <name>", "registered username on server (must exist via 'buildbox-user add')")
+    .option("--server-host <host>", "ssh alias for the token-issuing server (default: 'server', or $LOOMY_SERVER_HOST)")
     .option("--workspace-root <path>", "remote workspace root where projects are checked out")
-    .option("--yes", "non-interactive: accept defaults / overwrite")
-    .action(async (cmdOpts: { endpoint?: string; apiToken?: string; workspaceRoot?: string; yes?: boolean }) => {
+    .option("--yes", "non-interactive: accept defaults / overwrite (requires --user)")
+    .action(async (cmdOpts: { user?: string; serverHost?: string; workspaceRoot?: string; yes?: boolean }) => {
+      const globals = program.opts<GlobalFlags>();
       await runInit({
         stateDir: defaultStateDir(),
-        flags: { endpoint: cmdOpts.endpoint, apiToken: cmdOpts.apiToken, workspaceRoot: cmdOpts.workspaceRoot, yes: cmdOpts.yes },
+        flags: { endpoint: globals.endpoint, user: cmdOpts.user, serverHost: cmdOpts.serverHost, workspaceRoot: cmdOpts.workspaceRoot, yes: cmdOpts.yes },
         stderr: (s) => process.stderr.write(s),
       });
     });

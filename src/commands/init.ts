@@ -1,40 +1,43 @@
 import { join } from "node:path";
-import { input, password, confirm } from "@inquirer/prompts";
+import { input, confirm } from "@inquirer/prompts";
 import { writeCredentials, readCredentials } from "../config.js";
+import { fetchTokenForUser } from "../buildbox-user.js";
 import { CliError } from "../errors.js";
 
 export interface RunInitOpts {
   stateDir: string;
-  flags: { endpoint?: string; apiToken?: string; workspaceRoot?: string; yes?: boolean };
+  flags: { endpoint?: string; user?: string; serverHost?: string; workspaceRoot?: string; yes?: boolean };
   stderr: (s: string) => void;
   /** Override interactive prompts for tests. */
   prompts?: {
     askEndpoint: (defaultValue: string) => Promise<string>;
-    askToken: (defaultValue: string) => Promise<string>;
+    askUser: (defaultValue: string) => Promise<string>;
     askWorkspaceRoot: (defaultValue: string) => Promise<string>;
     confirmOverwrite: () => Promise<boolean>;
   };
+  /** Override token resolver for tests. */
+  resolveToken?: (user: string, sshHost?: string) => string;
 }
 
 export async function runInit(opts: RunInitOpts): Promise<void> {
   const existing = (() => { try { return readCredentials(opts.stateDir); } catch { return null; } })();
 
   const wantEndpoint = opts.flags.endpoint ?? existing?.endpoint ?? "";
-  const tokenDefault = opts.flags.apiToken ?? existing?.apiToken ?? "";
+  const userDefault = opts.flags.user ?? "";
   const workspaceDefault = opts.flags.workspaceRoot ?? existing?.workspaceRoot ?? "";
 
   let endpoint: string;
-  let apiToken: string;
+  let user: string;
   let workspaceRoot: string;
 
-  if (opts.flags.yes && (opts.flags.apiToken || tokenDefault)) {
+  if (opts.flags.yes && opts.flags.user) {
     endpoint = wantEndpoint;
-    apiToken = opts.flags.apiToken ?? tokenDefault;
+    user = opts.flags.user;
     workspaceRoot = workspaceDefault;
   } else {
     const p = opts.prompts ?? {
       askEndpoint: (def: string) => input({ message: "Gateway endpoint", default: def }),
-      askToken: (def: string) => password({ message: "API token", mask: "*" }).then((v) => v || def),
+      askUser: (def: string) => input({ message: "Username (must already exist on server via 'buildbox-user add')", default: def }),
       askWorkspaceRoot: (def: string) => input({ message: "Workspace root on remote host (where projects are checked out, e.g. ~/projects)", default: def }),
       confirmOverwrite: () => confirm({ message: "credentials.json exists. Overwrite?", default: false }),
     };
@@ -46,10 +49,14 @@ export async function runInit(opts: RunInitOpts): Promise<void> {
       }
     }
     endpoint = await p.askEndpoint(wantEndpoint);
-    apiToken = await p.askToken(tokenDefault);
-    if (!apiToken) throw new CliError("usage", "apiToken is required");
+    user = await p.askUser(userDefault);
+    if (!user) throw new CliError("usage", "username is required");
     workspaceRoot = await p.askWorkspaceRoot(workspaceDefault);
   }
+
+  const resolve = opts.resolveToken ?? ((u, h) => fetchTokenForUser({ user: u, sshHost: h }));
+  const apiToken = resolve(user, opts.flags.serverHost);
+  opts.stderr(`resolved token for user '${user}' via ssh ${opts.flags.serverHost ?? process.env.LOOMY_SERVER_HOST ?? "server"}\n`);
 
   writeCredentials(opts.stateDir, { endpoint, apiToken, ...(workspaceRoot ? { workspaceRoot } : {}) });
   opts.stderr(`wrote ${join(opts.stateDir, "credentials.json")} (mode 600)\n`);

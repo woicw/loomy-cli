@@ -17,25 +17,28 @@ afterEach(() => {
 });
 
 describe("init non-interactive", () => {
-  it("writes credentials.json with the supplied values", async () => {
+  it("resolves token for the supplied username and writes credentials.json", async () => {
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
     const out: string[] = [];
     await runInit({
       stateDir: dir,
-      flags: { endpoint: "http://x", apiToken: "TOK", yes: true },
+      flags: { endpoint: "http://x", user: "alice", yes: true },
       stderr: (s) => out.push(s),
+      resolveToken: (u) => `T-${u}-deadbeef`,
     });
     expect(existsSync(join(dir, "credentials.json"))).toBe(true);
     const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
-    expect(cred).toEqual({ endpoint: "http://x", apiToken: "TOK" });
+    expect(cred).toEqual({ endpoint: "http://x", apiToken: "T-alice-deadbeef" });
+    expect(out.join("")).toMatch(/resolved token for user 'alice'/);
   });
 
   it("persists --workspace-root flag value", async () => {
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
     await runInit({
       stateDir: dir,
-      flags: { endpoint: "http://x", apiToken: "TOK", workspaceRoot: "~/code", yes: true },
+      flags: { endpoint: "http://x", user: "alice", workspaceRoot: "~/code", yes: true },
       stderr: () => {},
+      resolveToken: () => "TOK",
     });
     const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
     expect(cred.workspaceRoot).toBe("~/code");
@@ -45,8 +48,9 @@ describe("init non-interactive", () => {
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
     await runInit({
       stateDir: dir,
-      flags: { endpoint: "http://x", apiToken: "TOK", yes: true },
+      flags: { endpoint: "http://x", user: "alice", yes: true },
       stderr: () => {},
+      resolveToken: () => "TOK",
     });
     const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
     expect("workspaceRoot" in cred).toBe(false);
@@ -57,11 +61,25 @@ describe("init non-interactive", () => {
     const out: string[] = [];
     await runInit({
       stateDir: dir,
-      flags: { endpoint: "http://x", apiToken: "BAD", yes: true },
+      flags: { endpoint: "http://x", user: "alice", yes: true },
       stderr: (s) => out.push(s),
+      resolveToken: () => "BAD",
     });
     expect(existsSync(join(dir, "credentials.json"))).toBe(true);
     expect(out.join("")).toMatch(/healthz/i);
   });
 
+  it("propagates resolver error (e.g. unknown user)", async () => {
+    await expect(
+      runInit({
+        stateDir: dir,
+        flags: { endpoint: "http://x", user: "ghost", yes: true },
+        stderr: () => {},
+        resolveToken: () => {
+          throw new Error("user 'ghost' not registered on server");
+        },
+      }),
+    ).rejects.toThrow(/not registered/);
+    expect(existsSync(join(dir, "credentials.json"))).toBe(false);
+  });
 });

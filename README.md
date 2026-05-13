@@ -13,12 +13,12 @@ Node ≥ 20 required.
 ## Quickstart
 
 ```
-loomy init                       # store endpoint + API token to ~/.loomy-cli/credentials.json
+loomy init --user <username>     # resolves token via 'ssh server buildbox-user show', writes ~/.loomy-cli/credentials.json
 loomy ping                       # confirm the gateway is reachable
 loomy chat "summarize this PR"   # streamed SSE chat
 ```
 
-`loomy init` accepts `--endpoint <url>` / `--api-token <s>` / `--yes` for non-interactive use, or you can set `LOOMY_ENDPOINT` and pass `--token`.
+`loomy init` requires `--user <name>` (the username must already exist on the server via `buildbox-user add`); the CLI shells out to `ssh server buildbox-user show <name>` to fetch the Bearer token. Override the ssh alias with `--server-host <h>` or `LOOMY_SERVER_HOST`. Combine with `--endpoint <url>` / `--workspace-root <path>` / `--yes` for non-interactive use.
 
 ## Commands
 
