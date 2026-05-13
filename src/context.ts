@@ -30,8 +30,9 @@ export function resolveProjectContext(opts: ResolveContextOpts): ProjectContext 
   let project: string | null = opts.cliProject ?? env.LOOMY_PROJECT ?? null;
   let branch: string | null = opts.cliBranch ?? env.LOOMY_BRANCH ?? null;
   let repoUrl: string | null = opts.cliRepoUrl ?? env.LOOMY_REPO ?? null;
-  const workspaceRoot: string | null =
+  const rawWorkspaceRoot: string | null =
     opts.cliWorkspaceRoot ?? env.LOOMY_WORKSPACE_ROOT ?? opts.configWorkspaceRoot ?? null;
+  const workspaceRoot = normalizeWorkspaceRoot(rawWorkspaceRoot, env.HOME);
 
   if (!project || !branch || !repoUrl) {
     const root = gitRootFn(opts.cwd);
@@ -43,6 +44,20 @@ export function resolveProjectContext(opts: ResolveContextOpts): ProjectContext 
   }
 
   return { project, branch, repoUrl, workspaceRoot };
+}
+
+/**
+ * If the workspace root is rooted under the local user's $HOME (because the
+ * shell already expanded `~` before `loomy init` saw it), rewrite it back to
+ * `~/…` form so the remote hermes side expands it against ITS own HOME
+ * (`/Users/loomy/…`), not against the Mac user's home (`/Users/woic/…`).
+ */
+export function normalizeWorkspaceRoot(path: string | null, home: string | undefined): string | null {
+  if (!path) return path;
+  if (!home) return path;
+  if (path === home) return "~";
+  if (path.startsWith(home + "/")) return "~/" + path.slice(home.length + 1);
+  return path;
 }
 
 export function buildPreamble(ctx: ProjectContext): string | null {

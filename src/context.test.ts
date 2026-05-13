@@ -199,3 +199,60 @@ describe("buildPreamble", () => {
       .toBe("[项目: foo · 分支: main · 仓库: git@gh.com:me/foo.git · 根目录: ~/code]");
   });
 });
+
+describe("normalizeWorkspaceRoot (shell-expanded ~ → tilde form)", () => {
+  it("rewrites local-HOME prefix back to ~/ so remote expands against its own HOME", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliWorkspaceRoot: "/Users/woic/ifly",
+        env: { HOME: "/Users/woic" } as NodeJS.ProcessEnv,
+        gitRoot: () => null,
+      }).workspaceRoot,
+    ).toBe("~/ifly");
+  });
+
+  it("returns ~ when path equals HOME exactly", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliWorkspaceRoot: "/Users/woic",
+        env: { HOME: "/Users/woic" } as NodeJS.ProcessEnv,
+        gitRoot: () => null,
+      }).workspaceRoot,
+    ).toBe("~");
+  });
+
+  it("leaves paths outside HOME alone", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliWorkspaceRoot: "/opt/projects",
+        env: { HOME: "/Users/woic" } as NodeJS.ProcessEnv,
+        gitRoot: () => null,
+      }).workspaceRoot,
+    ).toBe("/opt/projects");
+  });
+
+  it("preserves tilde-form input as-is", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliWorkspaceRoot: "~/ifly",
+        env: { HOME: "/Users/woic" } as NodeJS.ProcessEnv,
+        gitRoot: () => null,
+      }).workspaceRoot,
+    ).toBe("~/ifly");
+  });
+
+  it("falls through when HOME env is unset", () => {
+    expect(
+      resolveProjectContext({
+        cwd: "/x",
+        cliWorkspaceRoot: "/Users/woic/ifly",
+        env: {} as NodeJS.ProcessEnv,
+        gitRoot: () => null,
+      }).workspaceRoot,
+    ).toBe("/Users/woic/ifly");
+  });
+});
