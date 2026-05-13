@@ -1,5 +1,5 @@
 import type { GatewayClient } from "../client.js";
-import { parseSseStream } from "../sse.js";
+import { runChatStream } from "../repl/runChatStream.js";
 import { CliError } from "../errors.js";
 
 export type RenderMode = "default" | "json" | "quiet";
@@ -16,53 +16,24 @@ export interface RunChatOpts {
 
 export async function runChat(opts: RunChatOpts): Promise<void> {
   const message = opts.preamble ? `${opts.preamble}\n\n${opts.message}` : opts.message;
-  const res = await opts.client.postSse("/v1/hermes/chat", {
-    sessionId: opts.sessionId,
-    message,
-  });
-  if (!res.body) throw new CliError("network", "no response body from /v1/hermes/chat");
-
   const buf: string[] = [];
 
-  for await (const ev of parseSseStream(res.body)) {
-    if (ev.event === "delta") {
-      const parsed = safeParse(ev.data);
-      const text = typeof parsed?.text === "string" ? parsed.text : "";
-      if (opts.mode === "json") {
-        opts.stdout(JSON.stringify({ event: "delta", text }) + "\n");
-      } else if (opts.mode === "quiet") {
-        buf.push(text);
-      } else {
-        opts.stdout(text);
-      }
-    } else if (ev.event === "tool_call") {
-      const parsed = safeParse(ev.data);
-      if (opts.mode === "json") {
-        opts.stdout(JSON.stringify({ event: "tool_call", payload: parsed }) + "\n");
-      } else {
-        opts.stderr(`[tool] ${JSON.stringify(parsed)}\n`);
-      }
-    } else if (ev.event === "done") {
-      const parsed = safeParse(ev.data);
-      const stopReason = typeof parsed?.stopReason === "string" ? parsed.stopReason : null;
-      if (opts.mode === "json") {
-        opts.stdout(JSON.stringify({ event: "done", stopReason }) + "\n");
-      } else if (opts.mode === "quiet") {
-        opts.stdout(buf.join("") + "\n");
-      } else {
-        opts.stdout("\n");
-        opts.stderr(`--- done (stopReason=${stopReason ?? "?"})\n`);
-      }
-    } else if (ev.event === "error") {
-      const parsed = safeParse(ev.data);
-      const msg = typeof parsed?.message === "string" ? parsed.message : ev.data;
-      throw new CliError("http5xx", msg);
+  for await (const ev of runChatStream({ client: opts.client, sessionId: opts.sessionId, message })) {
+    if (ev.kind === "delta") {
+      if (opts.mode === "json") opts.stdout(JSON.stringify({ event: "delta", text: ev.text }) + "\n");
+      else if (opts.mode === "quiet") buf.push(ev.text);
+      else opts.stdout(ev.text);
+    } else if (ev.kind === "tool") {
+      if (opts.mode === "json") opts.stdout(JSON.stringify({ event: "tool_call", payload: ev.payload }) + "\n");
+      else opts.stderr(`[tool] ${JSON.stringify(ev.payload)}\n`);
+    } else if (ev.kind === "done") {
+      if (opts.mode === "json") opts.stdout(JSON.stringify({ event: "done", stopReason: ev.stopReason }) + "\n");
+      else if (opts.mode === "quiet") opts.stdout(buf.join("") + "\n");
+      else { opts.stdout("\n"); opts.stderr(`--- done (stopReason=${ev.stopReason ?? "?"})\n`); }
+    } else if (ev.kind === "error") {
+      throw new CliError("http5xx", ev.message);
     }
   }
-}
-
-function safeParse(s: string): any {
-  try { return JSON.parse(s); } catch { return undefined; }
 }
 
 export interface RunChatCancelOpts {
