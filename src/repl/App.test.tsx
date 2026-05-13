@@ -49,4 +49,29 @@ describe("<App/>", () => {
     const out = lastFrame() ?? "";
     expect(out).not.toContain("sid-1".slice(0, 8));
   });
+
+  it("/help inserts a synthetic turn with command list", async () => {
+    const deps = makeDeps();
+    const { stdin, lastFrame } = render(<App {...deps} />);
+    stdin.write("/help");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(lastFrame()).toContain("/new");
+    expect(lastFrame()).toContain("/exit");
+  });
+
+  it("/clear empties the transcript", async () => {
+    const deps = makeDeps();
+    const { stdin, lastFrame } = render(<App {...deps} />);
+    stdin.write("hi");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    stdin.write("/clear");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(lastFrame()).not.toContain("> hi");
+  });
 });

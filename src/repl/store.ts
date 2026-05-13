@@ -33,6 +33,7 @@ export interface ReplStore {
       | { status: "interrupted" }
       | { status: "error"; errorMessage: string },
   ): void;
+  clearTurns(): void;
   setQueued(text: string | undefined): void;
   setExitArmed(armed: boolean): void;
 }
@@ -96,6 +97,7 @@ export function createStore(init: { sessionId: string }): ReplStore {
       else mutateLastTurn({ status: "error", errorMessage: arg.errorMessage });
       mutate({ streaming: false });
     },
+    clearTurns() { mutate({ turns: [] }); },
     setQueued(text) {
       mutate({ queuedNext: text });
     },

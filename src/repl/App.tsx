@@ -6,7 +6,7 @@ import { Transcript } from "./Transcript.js";
 import { Composer } from "./Composer.js";
 import { StatusBar } from "./StatusBar.js";
 import { createStore, type ReplState } from "./store.js";
-import { parseSlash } from "./slash.js";
+import { parseSlash, SLASH_HELP } from "./slash.js";
 import type { ChatEvent } from "./runChatStream.js";
 
 export interface AppProps {
@@ -33,10 +33,22 @@ export function App(props: AppProps) {
     if (slash) {
       if (slash.cmd === "exit" || slash.cmd === "quit") { exit(); return; }
       if (slash.cmd === "new") {
-        const fresh = randomUUID();
-        storeRef.current.setSessionId(fresh);
+        storeRef.current.setSessionId(randomUUID());
         return;
       }
+      if (slash.cmd === "clear") {
+        storeRef.current.clearTurns();
+        return;
+      }
+      if (slash.cmd === "help") {
+        storeRef.current.beginTurn("/help");
+        for (const item of SLASH_HELP) storeRef.current.appendAssistant(`${item.cmd}  —  ${item.desc}\n`);
+        storeRef.current.endTurn({ status: "done", stopReason: "help" });
+        return;
+      }
+      // unknown slash → show synthetic error turn
+      storeRef.current.beginTurn(text);
+      storeRef.current.endTurn({ status: "error", errorMessage: `unknown command: /${slash.cmd} (try /help)` });
       return;
     }
     const message = props.preamble ? `${props.preamble}\n\n${text}` : text;

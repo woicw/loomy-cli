@@ -44,4 +44,12 @@ describe("repl store", () => {
     s.pushTool({ name: "bash", summary: "ls" });
     expect(s.getState().turns[0]!.tools).toEqual([{ name: "bash", summary: "ls" }]);
   });
+
+  it("clearTurns empties turns", () => {
+    const s = createStore({ sessionId: "s1" });
+    s.beginTurn("hi");
+    s.endTurn({ status: "done", stopReason: "x" });
+    s.clearTurns();
+    expect(s.getState().turns).toEqual([]);
+  });
 });
