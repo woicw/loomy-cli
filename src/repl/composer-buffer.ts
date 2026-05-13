@@ -36,3 +36,19 @@ export function insertChar(b: BufferState, ch: string): BufferState {
     cursor: { row: b.cursor.row, col: b.cursor.col + ch.length },
   };
 }
+
+export function backspace(b: BufferState): BufferState {
+  if (b.cursor.col === 0 && b.cursor.row === 0) return b;
+  if (b.cursor.col === 0) {
+    const prev = b.lines[b.cursor.row - 1] ?? "";
+    const curr = b.lines[b.cursor.row] ?? "";
+    const newLines = [...b.lines];
+    newLines.splice(b.cursor.row - 1, 2, prev + curr);
+    return { lines: newLines, cursor: { row: b.cursor.row - 1, col: prev.length } };
+  }
+  const line = b.lines[b.cursor.row] ?? "";
+  const next = line.slice(0, b.cursor.col - 1) + line.slice(b.cursor.col);
+  const newLines = [...b.lines];
+  newLines[b.cursor.row] = next;
+  return { lines: newLines, cursor: { row: b.cursor.row, col: b.cursor.col - 1 } };
+}
