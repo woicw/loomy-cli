@@ -63,16 +63,21 @@ export function Composer({ onSubmit, onCancel, onEscape, disabled }: ComposerPro
   });
 
   return (
-    <Box flexDirection="column" width="100%">
+    <Box
+      flexDirection="column"
+      width="100%"
+      borderStyle="single"
+      borderLeft={false}
+      borderRight={false}
+      borderColor="gray"
+    >
       {buf.lines.map((line, i) => {
         const isCursorRow = i === buf.cursor.row;
-        const prefix = i === 0 ? "> " : "  ";
-        if (!isCursorRow) return <Text key={i} dimColor={i > 0}>{prefix}{line || " "}</Text>;
+        if (!isCursorRow) return <Text key={i}>{line || " "}</Text>;
         const before = line.slice(0, buf.cursor.col);
         const after = line.slice(buf.cursor.col);
         return (
-          <Text key={i} dimColor={i > 0}>
-            {prefix}
+          <Text key={i}>
             {before}
             <Text inverse>▌</Text>
             {after}
