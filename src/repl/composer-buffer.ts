@@ -91,3 +91,12 @@ export function finalize(b: BufferState): string {
   );
   return cleaned.join("\n").trimEnd();
 }
+
+export function newline(b: BufferState): BufferState {
+  const line = b.lines[b.cursor.row] ?? "";
+  const before = line.slice(0, b.cursor.col);
+  const after = line.slice(b.cursor.col);
+  const newLines = [...b.lines];
+  newLines.splice(b.cursor.row, 1, before, after);
+  return { lines: newLines, cursor: { row: b.cursor.row + 1, col: 0 } };
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { emptyBuffer, insertChar, backspace, moveCursor, shouldSubmit, finalize, type BufferState } from "./composer-buffer.js";
+import { emptyBuffer, insertChar, backspace, moveCursor, shouldSubmit, finalize, newline, type BufferState } from "./composer-buffer.js";
 
 describe("composer-buffer initial state", () => {
   it("emptyBuffer has one empty line and cursor at 0,0", () => {
@@ -95,5 +95,14 @@ describe("finalize", () => {
   });
   it("does not strip backslashes mid-line", () => {
     expect(finalize({ lines: ["a\\b", "c"], cursor: { row: 1, col: 1 } })).toBe("a\\b\nc");
+  });
+});
+
+describe("newline", () => {
+  it("splits the current line at cursor", () => {
+    const b: BufferState = { lines: ["hello"], cursor: { row: 0, col: 3 } };
+    const next = newline(b);
+    expect(next.lines).toEqual(["hel", "lo"]);
+    expect(next.cursor).toEqual({ row: 1, col: 0 });
   });
 });
