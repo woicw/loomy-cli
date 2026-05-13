@@ -3,6 +3,8 @@ import { CliError } from "./errors.js";
 export interface ClientOpts {
   endpoint: string;
   apiToken: string;
+  /** Human-readable identifier (e.g. git config user.name) sent as X-Loomy-Username for audit. Omit to let the server fall back to X-Loomy-User. */
+  username?: string | null;
   fetchImpl?: typeof fetch;
   debug?: boolean;
   /** Where debug lines go. Defaults to process.stderr. */
@@ -27,10 +29,11 @@ export class GatewayClient {
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
-    return {
+    const base: Record<string, string> = {
       authorization: `Bearer ${this.opts.apiToken}`,
-      ...extra,
     };
+    if (this.opts.username) base["x-loomy-username"] = this.opts.username;
+    return { ...base, ...extra };
   }
 
   async getJson<T = unknown>(path: string): Promise<T> {

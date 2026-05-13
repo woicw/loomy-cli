@@ -42,11 +42,14 @@ Run `loomy <command> --help` for full options on any command.
 
 ## Configuration
 
-| Source | Endpoint | Token |
-|---|---|---|
-| CLI flag | `--endpoint <url>` | `--token <s>` |
-| Env | `LOOMY_ENDPOINT` | — |
-| File | `~/.loomy-cli/credentials.json` | — |
+| Source | Endpoint | Token | Username |
+|---|---|---|---|
+| CLI flag | `--endpoint <url>` | `--token <s>` | `--username <s>` |
+| Env | `LOOMY_ENDPOINT` | — | `LOOMY_USERNAME` |
+| File | `~/.loomy-cli/credentials.json` | — | — |
+| Fallback | — | — | `git config user.name` |
+
+Every request carries `X-Loomy-Username` when a username is resolvable; the server logs that name in `audit.user` / `evidence.user`, falling back to the token's `X-Loomy-User` when the header is absent.
 
 Resolution: flag > env > file. Endpoint is required; the CLI errors out clearly if it can't resolve one.
 

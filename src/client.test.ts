@@ -27,6 +27,28 @@ describe("GatewayClient", () => {
     expect(captured).toBe("Bearer T");
   });
 
+  it("attaches X-Loomy-Username header when username is set", async () => {
+    let captured: string | null = null;
+    mockFetch((req) => {
+      captured = req.headers.get("x-loomy-username");
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    const c = new GatewayClient({ endpoint: "http://gw", apiToken: "T", username: "zhenwang54" });
+    await c.getJson("/healthz");
+    expect(captured).toBe("zhenwang54");
+  });
+
+  it("omits X-Loomy-Username header when username is null/undefined", async () => {
+    let captured: string | null = null;
+    mockFetch((req) => {
+      captured = req.headers.get("x-loomy-username");
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    const c = new GatewayClient({ endpoint: "http://gw", apiToken: "T", username: null });
+    await c.getJson("/healthz");
+    expect(captured).toBeNull();
+  });
+
   it("returns parsed JSON on 2xx", async () => {
     mockFetch(() => new Response(JSON.stringify({ a: 1 }), { status: 200, headers: { "content-type": "application/json" } }));
     const c = new GatewayClient({ endpoint: "http://gw", apiToken: "T" });

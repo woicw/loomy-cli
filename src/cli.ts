@@ -12,6 +12,7 @@ import { runVersion } from "./commands/version.js";
 import { runSessionsList, runSessionsRm } from "./commands/sessions.js";
 import { runChat, runChatCancel, type RenderMode } from "./commands/chat.js";
 import { resolveProjectContext, buildPreamble } from "./context.js";
+import { resolveUsername } from "./git-user.js";
 import { runInit } from "./commands/init.js";
 import { runInstall, runInstallList } from "./commands/install.js";
 import { defaultAssetsDir, defaultTargetDir } from "./skills.js";
@@ -22,6 +23,7 @@ const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8
 interface GlobalFlags {
   endpoint?: string;
   token?: string;
+  username?: string;
   json?: boolean;
   quiet?: boolean;
   debug?: boolean;
@@ -31,9 +33,11 @@ function makeClient(globals: GlobalFlags): GatewayClient {
   const cfg = loadConfig({
     flags: { token: globals.token, endpoint: globals.endpoint },
   });
+  const username = resolveUsername({ cwd: process.cwd(), cliUsername: globals.username });
   return new GatewayClient({
     endpoint: cfg.endpoint,
     apiToken: cfg.apiToken,
+    username,
     debug: globals.debug,
   });
 }
@@ -55,6 +59,7 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .version(pkg.version)
     .addOption(new Option("--endpoint <url>", "gateway base URL").default(undefined))
     .addOption(new Option("--token <s>", "Bearer token override").default(undefined))
+    .addOption(new Option("--username <s>", "X-Loomy-Username header override (defaults to git config user.name)").default(undefined))
     .option("--json", "JSONL output")
     .option("--quiet", "buffer chat deltas, print final reply only")
     .option("--debug", "print request/response headers to stderr");
