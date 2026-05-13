@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { emptyBuffer, insertChar, backspace, moveCursor, type BufferState } from "./composer-buffer.js";
+import { emptyBuffer, insertChar, backspace, moveCursor, shouldSubmit, finalize, type BufferState } from "./composer-buffer.js";
 
 describe("composer-buffer initial state", () => {
   it("emptyBuffer has one empty line and cursor at 0,0", () => {
@@ -71,5 +71,29 @@ describe("moveCursor", () => {
   it("down at last line is no-op", () => {
     const b: BufferState = { lines: ["abc"], cursor: { row: 0, col: 2 } };
     expect(moveCursor(b, "down")).toEqual(b);
+  });
+});
+
+describe("submit decision", () => {
+  it("plain content submits", () => {
+    expect(shouldSubmit({ lines: ["hello"], cursor: { row: 0, col: 5 } })).toBe(true);
+  });
+  it("backslash at end means continue", () => {
+    expect(shouldSubmit({ lines: ["hello\\"], cursor: { row: 0, col: 6 } })).toBe(false);
+  });
+  it("multi-line with last line ending in \\ continues", () => {
+    expect(shouldSubmit({ lines: ["a", "b\\"], cursor: { row: 1, col: 2 } })).toBe(false);
+  });
+  it("empty buffer does not submit", () => {
+    expect(shouldSubmit(emptyBuffer())).toBe(false);
+  });
+});
+
+describe("finalize", () => {
+  it("joins lines with \\n and strips trailing \\ continuations", () => {
+    expect(finalize({ lines: ["hello\\", "world"], cursor: { row: 1, col: 5 } })).toBe("hello\nworld");
+  });
+  it("does not strip backslashes mid-line", () => {
+    expect(finalize({ lines: ["a\\b", "c"], cursor: { row: 1, col: 1 } })).toBe("a\\b\nc");
   });
 });

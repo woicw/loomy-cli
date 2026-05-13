@@ -77,3 +77,17 @@ export function moveCursor(b: BufferState, dir: MoveDir): BufferState {
   const nextLen = (b.lines[row + 1] ?? "").length;
   return { ...b, cursor: { row: row + 1, col: Math.min(col, nextLen) } };
 }
+
+export function shouldSubmit(b: BufferState): boolean {
+  const text = b.lines.join("\n").trim();
+  if (!text) return false;
+  const last = b.lines[b.lines.length - 1] ?? "";
+  return !last.endsWith("\\");
+}
+
+export function finalize(b: BufferState): string {
+  const cleaned = b.lines.map((l, i) =>
+    i < b.lines.length - 1 && l.endsWith("\\") ? l.slice(0, -1) : l,
+  );
+  return cleaned.join("\n").trimEnd();
+}
