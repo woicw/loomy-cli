@@ -26,7 +26,7 @@ loomy chat "summarize this PR"   # streamed SSE chat
 |---|---|
 | `loomy ping` | `GET /healthz` — connectivity check |
 | `loomy version` | CLI + gateway + agent versions |
-| `loomy chat [prompt...]` | Streamed chat. `--new` for a fresh session. `--cancel` to abort in-flight |
+| `loomy chat [prompt...]` | Streamed chat. `--new` for a fresh session. `--cancel` to abort in-flight. **Requires a remote git URL (`git remote add origin <url>`, `--ssh-url`, or `LOOMY_REPO`); pass `--no-context` to bypass.** |
 | `loomy chat --project X --branch Y --ssh-url Z` | Override the auto-attached `[项目: · 分支: · 仓库:]` preamble |
 | `loomy sessions list` / `rm <id>` | Inspect / drop active sessions |
 | `loomy init` | Write `~/.loomy-cli/credentials.json` (mode 600) |
