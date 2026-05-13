@@ -18,4 +18,7 @@ describe("parseSlash", () => {
   it("lowercases the command", () => {
     expect(parseSlash("/EXIT")).toEqual({ cmd: "exit", args: [] });
   });
+  it("tolerates whitespace immediately after the slash", () => {
+    expect(parseSlash("/ help")).toEqual({ cmd: "help", args: [] });
+  });
 });

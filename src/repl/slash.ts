@@ -5,7 +5,7 @@ export interface ParsedSlash {
 
 export function parseSlash(input: string): ParsedSlash | null {
   if (!input.startsWith("/")) return null;
-  const trimmed = input.trim().slice(1);
+  const trimmed = input.slice(1).trim();
   if (!trimmed) return null;
   const parts = trimmed.split(/\s+/);
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
