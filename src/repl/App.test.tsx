@@ -4,6 +4,7 @@ import { App } from "./App.js";
 
 function makeDeps() {
   const cancelMock = vi.fn(async (): Promise<void> => {});
+  const closeSessionMock = vi.fn(async (): Promise<void> => {});
   return {
     initialSessionId: "sid-1",
     project: "loomy-design",
@@ -15,6 +16,7 @@ function makeDeps() {
       yield { kind: "done" as const, stopReason: "end_turn" };
     },
     cancel: cancelMock,
+    closeSession: closeSessionMock,
   };
 }
 
@@ -48,6 +50,26 @@ describe("<App/>", () => {
     await new Promise((r) => setTimeout(r, 30));
     const out = lastFrame() ?? "";
     expect(out).not.toContain("sid-1".slice(0, 8));
+  });
+
+  it("/new closes the previous session before switching", async () => {
+    const deps = makeDeps();
+    const { stdin } = render(<App {...deps} />);
+    stdin.write("/new");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(deps.closeSession).toHaveBeenCalledWith("sid-1");
+  });
+
+  it("/exit closes the current session before quitting", async () => {
+    const deps = makeDeps();
+    const { stdin } = render(<App {...deps} />);
+    stdin.write("/exit");
+    await new Promise((r) => setTimeout(r, 10));
+    stdin.write("\r");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(deps.closeSession).toHaveBeenCalledWith("sid-1");
   });
 
   it("/help inserts a synthetic turn with command list", async () => {

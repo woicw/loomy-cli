@@ -17,6 +17,8 @@ export interface AppProps {
   preamble?: string | null;
   streamFactory: (args: { sessionId: string; message: string }) => AsyncGenerator<ChatEvent>;
   cancel: (sessionId: string) => Promise<void>;
+  /** Close a session in the gateway pool (DELETE /v1/sessions/:id). Fire-and-forget on exit / /new. */
+  closeSession: (sessionId: string) => Promise<void>;
 }
 
 export function App(props: AppProps) {
@@ -28,11 +30,24 @@ export function App(props: AppProps) {
   useEffect(() => storeRef.current.subscribe(setState), []);
   useEffect(() => () => { if (exitTimer.current) clearTimeout(exitTimer.current); }, []);
 
+  // Fire-and-forget close so we don't leak gateway-side sessions against the
+  // MAX_SESSIONS_PER_USER cap. Called from exit paths and /new (which abandons
+  // the current sessionId).
+  const closeCurrentSession = () => {
+    props.closeSession(storeRef.current.getState().sessionId).catch(() => {});
+  };
+
+  const exitRepl = () => {
+    closeCurrentSession();
+    exit();
+  };
+
   const sendPrompt = async (text: string) => {
     const slash = parseSlash(text);
     if (slash) {
-      if (slash.cmd === "exit" || slash.cmd === "quit") { exit(); return; }
+      if (slash.cmd === "exit" || slash.cmd === "quit") { exitRepl(); return; }
       if (slash.cmd === "new") {
+        closeCurrentSession();
         storeRef.current.setSessionId(randomUUID());
         return;
       }
@@ -91,7 +106,7 @@ export function App(props: AppProps) {
   const handleCancel = () => {
     const st = storeRef.current.getState();
     if (st.streaming) { handleStreamCancel(); return; }
-    if (st.exitArmed) { exit(); return; }
+    if (st.exitArmed) { exitRepl(); return; }
     storeRef.current.setExitArmed(true);
     if (exitTimer.current) clearTimeout(exitTimer.current);
     exitTimer.current = setTimeout(() => storeRef.current.setExitArmed(false), 2000);

@@ -18,6 +18,9 @@ export async function runRepl(opts: RunReplOpts): Promise<void> {
   const cancel = async (sessionId: string) => {
     await opts.client.postJson("/v1/hermes/cancel", { sessionId });
   };
+  const closeSession = async (sessionId: string) => {
+    await opts.client.deleteJson(`/v1/hermes/sessions/${encodeURIComponent(sessionId)}`);
+  };
   const { waitUntilExit } = render(
     <App
       initialSessionId={opts.sessionId}
@@ -27,6 +30,7 @@ export async function runRepl(opts: RunReplOpts): Promise<void> {
       preamble={opts.preamble ?? null}
       streamFactory={streamFactory}
       cancel={cancel}
+      closeSession={closeSession}
     />,
   );
   await waitUntilExit();
