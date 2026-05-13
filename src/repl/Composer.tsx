@@ -73,11 +73,13 @@ export function Composer({ onSubmit, onCancel, onEscape, disabled }: ComposerPro
     >
       {buf.lines.map((line, i) => {
         const isCursorRow = i === buf.cursor.row;
-        if (!isCursorRow) return <Text key={i}>{line || " "}</Text>;
+        const prefix = i === 0 ? "> " : "  ";
+        if (!isCursorRow) return <Text key={i}>{prefix}{line || " "}</Text>;
         const before = line.slice(0, buf.cursor.col);
         const after = line.slice(buf.cursor.col);
         return (
           <Text key={i}>
+            {prefix}
             {before}
             <Text inverse>▌</Text>
             {after}
