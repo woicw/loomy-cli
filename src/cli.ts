@@ -15,6 +15,7 @@ import { resolveProjectContext, buildPreamble } from "./context.js";
 import { resolveUsername } from "./git-user.js";
 import { runInit } from "./commands/init.js";
 import { runInstall, runInstallList } from "./commands/install.js";
+import { runRepl } from "./commands/repl.js";
 import { defaultAssetsDir, defaultTargetDir } from "./skills.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -184,6 +185,32 @@ export async function main(argv: string[] = process.argv): Promise<number> {
         write: (s) => process.stdout.write(s),
       });
     });
+
+  program.action(async () => {
+    if (!process.stdin.isTTY) {
+      throw new CliError("usage", "bare loomy requires a TTY for REPL mode; run `loomy chat <prompt>` instead.");
+    }
+    const globals = program.opts<GlobalFlags>();
+    const client = makeClient(globals);
+    const cfg = loadConfig({ flags: { token: globals.token, endpoint: globals.endpoint } });
+    const ctx = resolveProjectContext({
+      cwd: process.cwd(),
+      configWorkspaceRoot: cfg.workspaceRoot ?? undefined,
+    });
+    if (!ctx.repoUrl) {
+      throw new CliError("usage", "no remote git URL detected. configure 'git remote add origin <url>', pass --ssh-url <url>, set LOOMY_REPO, or use `loomy chat --no-context` to skip the preamble entirely.");
+    }
+    const preamble = buildPreamble(ctx);
+    const sessionId = ensureSessionId(defaultStateDir(), true);
+    await runRepl({
+      client,
+      sessionId,
+      version: pkg.version,
+      project: ctx.project,
+      branch: ctx.branch,
+      preamble,
+    });
+  });
 
   try {
     await program.parseAsync(argv);
