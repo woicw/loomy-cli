@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 describe("init non-interactive", () => {
-  it("resolves token for the supplied username and writes credentials.json", async () => {
+  it("--user resolves token via ssh and writes credentials.json", async () => {
     globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
     const out: string[] = [];
     await runInit({
@@ -29,7 +29,34 @@ describe("init non-interactive", () => {
     expect(existsSync(join(dir, "credentials.json"))).toBe(true);
     const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
     expect(cred).toEqual({ endpoint: "http://x", apiToken: "T-alice-deadbeef" });
-    expect(out.join("")).toMatch(/resolved token for user 'alice'/);
+    expect(out.join("")).toMatch(/resolved token via ssh/);
+  });
+
+  it("--api-token writes the supplied token directly (no ssh)", async () => {
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as any;
+    const out: string[] = [];
+    const resolveToken = vi.fn();
+    await runInit({
+      stateDir: dir,
+      flags: { endpoint: "http://x", apiToken: "T-bob-cafef00d", yes: true },
+      stderr: (s) => out.push(s),
+      resolveToken: resolveToken as any,
+    });
+    expect(resolveToken).not.toHaveBeenCalled();
+    const cred = JSON.parse(readFileSync(join(dir, "credentials.json"), "utf8"));
+    expect(cred.apiToken).toBe("T-bob-cafef00d");
+    expect(out.join("")).toMatch(/resolved token via --api-token/);
+  });
+
+  it("rejects when both --user and --api-token are supplied", async () => {
+    await expect(
+      runInit({
+        stateDir: dir,
+        flags: { endpoint: "http://x", user: "alice", apiToken: "T-alice-x", yes: true },
+        stderr: () => {},
+      }),
+    ).rejects.toThrow(/mutually exclusive/);
+    expect(existsSync(join(dir, "credentials.json"))).toBe(false);
   });
 
   it("persists --workspace-root flag value", async () => {

@@ -13,7 +13,10 @@ Node ≥ 20 required.
 ## Quickstart
 
 ```
-loomy init --user <username>     # resolves token via 'ssh server buildbox-user show', writes ~/.loomy-cli/credentials.json
+# auth — pick one:
+loomy init --user <username>          # admin path: fetches token via 'ssh server buildbox-user show'
+loomy init --api-token T-<you>-<hex>  # user path: paste the token your admin gave you
+
 loomy ping                       # confirm the gateway is reachable
 loomy chat "summarize this PR"   # streamed SSE chat (one-shot)
 loomy                            # interactive REPL (multi-turn chat with hermes)
@@ -29,7 +32,12 @@ Running `loomy` with no arguments in a TTY launches an Ink-based REPL:
 - Requires a git remote in cwd (or `LOOMY_REPO` / `--ssh-url`), same as `loomy chat`
 - Each launch starts a fresh session; resume an existing one with `loomy --session <id>` or `/resume` (planned)
 
-`loomy init` requires `--user <name>` (the username must already exist on the server via `buildbox-user add`); the CLI shells out to `ssh server buildbox-user show <name>` to fetch the Bearer token. Override the ssh alias with `--server-host <h>` or `LOOMY_SERVER_HOST`. Combine with `--endpoint <url>` / `--workspace-root <path>` / `--yes` for non-interactive use.
+`loomy init` accepts two mutually-exclusive auth modes:
+
+- **`--user <name>`** — fetches your token via `ssh server buildbox-user show <name>`. Requires `Host server` in `~/.ssh/config` and key-based ssh access to the token-issuing host. Admin path.
+- **`--api-token <token>`** — write the token you already have directly. The token shape is `T-<username>-<32 hex>`; an admin can issue one with `ssh server buildbox-user add <name>`, then send you the printed token. User path.
+
+Override the ssh alias used by `--user` with `--server-host <h>` or `LOOMY_SERVER_HOST`. Combine with `--endpoint <url>` / `--workspace-root <path>` / `--yes` for non-interactive use. Interactive `loomy init` (no flags) walks you through a picker.
 
 ## Commands
 

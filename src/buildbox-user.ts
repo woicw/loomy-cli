@@ -16,7 +16,7 @@ export function fetchTokenForUser(opts: FetchTokenOpts): string {
   if (status !== 0) {
     throw new CliError(
       "auth",
-      `failed to fetch token via 'ssh ${host} buildbox-user show ${opts.user}' (exit ${status}). check ~/.ssh/config has 'Host ${host}' and you can ssh without password.\nstderr: ${stderr.trim()}`,
+      `failed to fetch token via 'ssh ${host} buildbox-user show ${opts.user}' (exit ${status}). this path is for admins with ssh access to the token-issuing server. if you don't have ssh to '${host}', ask an admin for your token and run 'loomy init --api-token T-<you>-<hex>' instead.\nstderr: ${stderr.trim()}`,
     );
   }
 
@@ -24,7 +24,7 @@ export function fetchTokenForUser(opts: FetchTokenOpts): string {
   if (!token) {
     throw new CliError(
       "auth",
-      `user '${opts.user}' not registered on ${host}. ask admin to run 'ssh ${host} buildbox-user add ${opts.user}' first.`,
+      `user '${opts.user}' not registered on ${host}. ask admin to run 'ssh ${host} buildbox-user add ${opts.user}' first, then either retry with --user or pass --api-token T-${opts.user}-<hex> directly.`,
     );
   }
   return token;
