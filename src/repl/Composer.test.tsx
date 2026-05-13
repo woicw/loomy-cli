@@ -28,4 +28,20 @@ describe("<Composer/>", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     expect(lastFrame()).toContain("foo");
   });
+
+  it("fires onEscape when Esc is pressed (even when disabled)", async () => {
+    const onEscape = vi.fn();
+    const { stdin } = render(<Composer onSubmit={() => {}} onEscape={onEscape} disabled={true} />);
+    stdin.write("\x1b"); // ESC
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onEscape).toHaveBeenCalled();
+  });
+
+  it("fires onCancel when Ctrl+C is pressed (even when disabled)", async () => {
+    const onCancel = vi.fn();
+    const { stdin } = render(<Composer onSubmit={() => {}} onCancel={onCancel} disabled={true} />);
+    stdin.write("\x03"); // Ctrl+C
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onCancel).toHaveBeenCalled();
+  });
 });

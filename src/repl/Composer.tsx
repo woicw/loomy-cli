@@ -13,19 +13,28 @@ import {
 
 export interface ComposerProps {
   onSubmit: (text: string) => void;
+  /** Ctrl+C handler: cancel current stream or arm exit (App owns the policy). */
   onCancel?: () => void;
+  /** Esc handler: cancel current stream only; no-op when idle. */
+  onEscape?: () => void;
   disabled: boolean;
 }
 
-export function Composer({ onSubmit, onCancel, disabled }: ComposerProps) {
+export function Composer({ onSubmit, onCancel, onEscape, disabled }: ComposerProps) {
   const [buf, setBuf] = useState<BufferState>(emptyBuffer());
 
   useInput((input, key) => {
-    if (disabled) return;
+    // Ctrl+C and Esc are always honored, even when disabled — they're the
+    // only way to interrupt a runaway stream.
     if (key.ctrl && input === "c") {
       onCancel?.();
       return;
     }
+    if (key.escape) {
+      onEscape?.();
+      return;
+    }
+    if (disabled) return;
     if (key.return) {
       if (shouldSubmit(buf)) {
         const text = finalize(buf);
@@ -54,22 +63,22 @@ export function Composer({ onSubmit, onCancel, disabled }: ComposerProps) {
   });
 
   return (
-    <Box borderStyle="round" paddingX={1}>
-      <Box flexDirection="column" width="100%">
-        {buf.lines.map((line, i) => {
-          const isCursorRow = i === buf.cursor.row;
-          if (!isCursorRow) return <Text key={i}>{line || " "}</Text>;
-          const before = line.slice(0, buf.cursor.col);
-          const after = line.slice(buf.cursor.col);
-          return (
-            <Text key={i}>
-              {before}
-              <Text inverse>▌</Text>
-              {after}
-            </Text>
-          );
-        })}
-      </Box>
+    <Box flexDirection="column" width="100%">
+      {buf.lines.map((line, i) => {
+        const isCursorRow = i === buf.cursor.row;
+        const prefix = i === 0 ? "> " : "  ";
+        if (!isCursorRow) return <Text key={i} dimColor={i > 0}>{prefix}{line || " "}</Text>;
+        const before = line.slice(0, buf.cursor.col);
+        const after = line.slice(buf.cursor.col);
+        return (
+          <Text key={i} dimColor={i > 0}>
+            {prefix}
+            {before}
+            <Text inverse>▌</Text>
+            {after}
+          </Text>
+        );
+      })}
     </Box>
   );
 }

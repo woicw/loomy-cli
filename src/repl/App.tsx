@@ -47,7 +47,7 @@ export function App(props: AppProps) {
         return;
       }
       if (slash.cmd === "cancel") {
-        handleCancel();
+        handleStreamCancel();
         return;
       }
       // unknown slash → show synthetic error turn
@@ -79,13 +79,18 @@ export function App(props: AppProps) {
     }
   };
 
+  // Cancels the current stream if any; no-op when idle. Used by Esc and /cancel.
+  const handleStreamCancel = () => {
+    const st = storeRef.current.getState();
+    if (!st.streaming) return;
+    props.cancel(st.sessionId).catch(() => {});
+    storeRef.current.endTurn({ status: "interrupted" });
+  };
+
+  // Ctrl+C: cancel current stream OR arm/confirm exit when idle.
   const handleCancel = () => {
     const st = storeRef.current.getState();
-    if (st.streaming) {
-      props.cancel(st.sessionId).catch(() => {});
-      storeRef.current.endTurn({ status: "interrupted" });
-      return;
-    }
+    if (st.streaming) { handleStreamCancel(); return; }
     if (st.exitArmed) { exit(); return; }
     storeRef.current.setExitArmed(true);
     if (exitTimer.current) clearTimeout(exitTimer.current);
@@ -96,7 +101,7 @@ export function App(props: AppProps) {
     <Box flexDirection="column">
       <Banner version={props.version} sessionId={state.sessionId} project={props.project} branch={props.branch} />
       <Transcript turns={state.turns} />
-      <Composer onSubmit={sendPrompt} onCancel={handleCancel} disabled={false} />
+      <Composer onSubmit={sendPrompt} onCancel={handleCancel} onEscape={handleStreamCancel} disabled={false} />
       <StatusBar streaming={state.streaming} exitArmed={state.exitArmed} />
     </Box>
   );
