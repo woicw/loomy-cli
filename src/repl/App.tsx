@@ -98,7 +98,7 @@ export function App(props: AppProps) {
   };
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingX={1}>
       <Banner version={props.version} sessionId={state.sessionId} project={props.project} branch={props.branch} />
       <Transcript turns={state.turns} />
       <Composer onSubmit={sendPrompt} onCancel={handleCancel} onEscape={handleStreamCancel} disabled={false} />
