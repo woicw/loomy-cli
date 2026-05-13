@@ -15,8 +15,19 @@ Node ≥ 20 required.
 ```
 loomy init --user <username>     # resolves token via 'ssh server buildbox-user show', writes ~/.loomy-cli/credentials.json
 loomy ping                       # confirm the gateway is reachable
-loomy chat "summarize this PR"   # streamed SSE chat
+loomy chat "summarize this PR"   # streamed SSE chat (one-shot)
+loomy                            # interactive REPL (multi-turn chat with hermes)
 ```
+
+### Interactive mode
+
+Running `loomy` with no arguments in a TTY launches an Ink-based REPL:
+
+- **Enter** sends; `\` then **Enter** inserts a newline (line continuation)
+- **Ctrl+C** cancels the current reply; press it again on an empty prompt to exit
+- Slash commands inside the REPL: `/new`, `/clear`, `/help`, `/cancel`, `/exit`
+- Requires a git remote in cwd (or `LOOMY_REPO` / `--ssh-url`), same as `loomy chat`
+- Each launch starts a fresh session; resume an existing one with `loomy --session <id>` or `/resume` (planned)
 
 `loomy init` requires `--user <name>` (the username must already exist on the server via `buildbox-user add`); the CLI shells out to `ssh server buildbox-user show <name>` to fetch the Bearer token. Override the ssh alias with `--server-host <h>` or `LOOMY_SERVER_HOST`. Combine with `--endpoint <url>` / `--workspace-root <path>` / `--yes` for non-interactive use.
 
@@ -24,6 +35,7 @@ loomy chat "summarize this PR"   # streamed SSE chat
 
 | Command | What it does |
 |---|---|
+| `loomy` (no args, TTY) | Launch interactive REPL — multi-line composer + streaming + slash commands |
 | `loomy ping` | `GET /healthz` — connectivity check |
 | `loomy version` | CLI + gateway + agent versions |
 | `loomy chat [prompt...]` | Streamed chat. `--new` for a fresh session. `--cancel` to abort in-flight. **Requires a remote git URL (`git remote add origin <url>`, `--ssh-url`, or `LOOMY_REPO`); pass `--no-context` to bypass.** |
