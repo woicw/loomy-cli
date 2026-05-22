@@ -50,7 +50,7 @@ Override the ssh alias used by `--user` with `--server-host <h>` or `LOOMY_SERVE
 | `loomy chat --project X --branch Y --ssh-url Z` | Override the auto-attached `[项目: · 分支: · 仓库:]` preamble |
 | `loomy sessions list` / `rm <id>` | Inspect / drop active sessions |
 | `loomy init` | Write `~/.loomy-cli/credentials.json` (mode 600) |
-| `loomy install --skill <names>` / `--list` | Install bundled skills into a local AI's skills dir (default `~/.claude/skills`) |
+| `loomy install --skill <names>` / `--list` | Install bundled skills into a local AI's skills dir (default `./.claude/skills` in the current project) |
 
 Run `loomy <command> --help` for full options on any command.
 

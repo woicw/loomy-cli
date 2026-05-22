@@ -17,8 +17,8 @@ export function defaultAssetsDir(): string {
   return candidates[0]!;
 }
 
-export function defaultTargetDir(): string {
-  return join(process.env.HOME ?? "/", ".claude", "skills");
+export function defaultTargetDir(cwd: string = process.cwd()): string {
+  return join(cwd, ".claude", "skills");
 }
 
 export function listSkills(assetsDir: string): string[] {
