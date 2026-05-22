@@ -16,7 +16,7 @@ import { resolveUsername } from "./git-user.js";
 import { runInit } from "./commands/init.js";
 import { runInstall, runInstallList } from "./commands/install.js";
 import { runRepl } from "./commands/repl.js";
-import { defaultAssetsDir, defaultTargetDir } from "./skills.js";
+import { defaultAssetsDir, defaultTargetDir, listSkills } from "./skills.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { version: string };
@@ -174,21 +174,24 @@ export async function main(argv: string[] = process.argv): Promise<number> {
     .command("install")
     .description("install bundled skills into the local agent")
     .option("--skill <names...>", "skill name(s) to install")
+    .option("--all", "install every bundled skill")
     .option("--list", "list available bundled skills")
     .option("--target <path>", "destination skills dir", defaultTargetDir())
     .option("--force", "overwrite existing skill dir")
-    .action(async (cmdOpts: { skill?: string[]; list?: boolean; target: string; force?: boolean }) => {
+    .action(async (cmdOpts: { skill?: string[]; all?: boolean; list?: boolean; target: string; force?: boolean }) => {
       if (cmdOpts.list) {
         await runInstallList({ assetsDir: defaultAssetsDir(), write: (s) => process.stdout.write(s) });
         return;
       }
-      if (!cmdOpts.skill || cmdOpts.skill.length === 0) {
-        throw new CliError("usage", "specify --skill <name> [...] or --list");
+      const assetsDir = defaultAssetsDir();
+      const skills = cmdOpts.all ? listSkills(assetsDir) : cmdOpts.skill;
+      if (!skills || skills.length === 0) {
+        throw new CliError("usage", "specify --skill <name> [...], --all, or --list");
       }
       await runInstall({
-        assetsDir: defaultAssetsDir(),
+        assetsDir,
         targetDir: cmdOpts.target,
-        skills: cmdOpts.skill,
+        skills,
         force: Boolean(cmdOpts.force),
         write: (s) => process.stdout.write(s),
       });

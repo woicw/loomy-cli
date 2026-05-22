@@ -1,6 +1,6 @@
 {
   "name": "loomy-cli",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Loomy gateway CLI",
   "private": false,
   "type": "module",
